@@ -32,7 +32,6 @@ byte	break_taken;			/* 0=trace trap, 1=breakpoint trap */
 int errno;
 int radix;
 byte charsave;
-#define PRIVATE	MLOCAL	/* not global */
 /*#define unblank(p) while(*p==' '||*p==011)++p*/
 #define unblank(p) while(isspace((int)(*p)))++p
 
@@ -84,15 +83,13 @@ long lookup(const T_symbol *table, char *name, byte nocase)
 }
 
 
-PRIVATE
-void cmd_error(void)
+static void cmd_error(void)
 {
 	cprintf(" ?\n");
 }
 
 
-PRIVATE
-char *token(char *lp, char **llp)
+static char *token(char *lp, char **llp)
 {
 	char *tp;
 	int16 ch;
@@ -112,8 +109,7 @@ char *token(char *lp, char **llp)
 	return tp;
 }
 
-PRIVATE
-int size_imm(void)
+static int size_imm(void)
 {
 	word bd, is;
 	int size;
@@ -132,8 +128,7 @@ int size_imm(void)
 }
 
 
-PRIVATE
-int size_ea(word ins)
+static int size_ea(word ins)
 {
 	word mode, reg;
 
@@ -162,8 +157,7 @@ int size_ea(word ins)
 #endif
 }
 
-PRIVATE
-void create_break(char *lp)
+static void create_break(char *lp)
 {
 	uint16 n;
 	long addr;
@@ -196,8 +190,7 @@ void create_break(char *lp)
 	else cmd_error();
 }
 
-PRIVATE
-void enable_break(char *lp)
+static void enable_break(char *lp)
 {
 	uint16 n = strtoul(lp, NULL, 10);
 
@@ -207,8 +200,7 @@ void enable_break(char *lp)
 	else cmd_error();
 }
 
-PRIVATE
-void disable_break(char *lp)
+static void disable_break(char *lp)
 {
 	uint16 n = strtoul(lp, NULL, 10);
 
@@ -218,8 +210,7 @@ void disable_break(char *lp)
 	else cmd_error();
 }
 
-PRIVATE
-void list_breaks(char *lp)
+static void list_breaks(char *lp)
 {
 	uint16 n;
 
@@ -233,8 +224,7 @@ void list_breaks(char *lp)
 	}
 }
 
-PRIVATE
-void clear_breaks(char *lp)
+static void clear_breaks(char *lp)
 {
 	uint16 n, a, b;
 
@@ -297,8 +287,7 @@ void remove_breaks(void)
 		-1		if all clear
 		n		number of the breakpoint  0...
 */
-PRIVATE
-int check_pc(void)
+static int check_pc(void)
 {
 	int n;
 
@@ -310,8 +299,7 @@ int check_pc(void)
 	return -1;
 }
 
-PRIVATE
-void execute_trace(long count)
+static void execute_trace(long count)
 {
 	int flag;
 	
@@ -324,8 +312,7 @@ void execute_trace(long count)
 	if (count > 0) Trace(count);
 }
 
-PRIVATE
-void execute_go(void)
+static void execute_go(void)
 {
 	int flag;
 	
@@ -345,8 +332,7 @@ void execute_go(void)
 #define is_trapv(ins) ((ins) == 0x4E76)
 #define is_trapcc(ins) (((ins) & 0xF0F8) == 0x50F8)
 
-PRIVATE
-void execute_skipover(void)
+static void execute_skipover(void)
 {
 	word ins;
 	int incr = 2;
@@ -383,8 +369,7 @@ void execute_skipover(void)
 	execute_go();
 }
 
-PRIVATE
-void print_regs(char name, long *v, word last)
+static void print_regs(char name, long *v, word last)
 {
 	word i;
 	for (i=0; i<last; ) {
@@ -393,8 +378,7 @@ void print_regs(char name, long *v, word last)
 	}
 }
 
-PRIVATE
-void print_state(struct STATUS *statep)
+static void print_state(struct STATUS *statep)
 {
 	print_regs('D', statep->d, 8);
 	print_regs('A', statep->a, 7);
@@ -404,8 +388,7 @@ void print_state(struct STATUS *statep)
 		statep->usp, statep->ssp  );
 }
 
-PRIVATE
-void dump_memory(int format, uint32 start, int count)
+static void dump_memory(int format, uint32 start, int count)
 {
 /*	static const char * const spacer = "        "; */
 	static const char * const fmt[4] = {
@@ -460,8 +443,7 @@ void dump_memory(int format, uint32 start, int count)
 
 }
 
-PRIVATE
-void help(void)
+static void help(void)
 {
 	cprintf("%s",
 "B <addr>  set break                    G  go from current PC\n"

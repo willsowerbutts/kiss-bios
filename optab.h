@@ -1,16 +1,15 @@
 /* struct for optab */
 struct optbl {
-    WORD inmsk;
-    WORD invalu;
-    WORD infmt;
+    short inmsk;
+    short invalu;
+    short infmt;
     char *innam;
 };
  
 #define MAXFMT  28
 #define OPENT 4   /* # words per line in optab */
 
-CONST
-struct optbl optab[] = {
+const struct optbl optab[] = {
     { 0xffff, 0x023c, 3,      "andi.b" },
     { 0xffff, 0x027c, 3,      "andi.w" },
     { 0xffff, 0x0a3c, 3,      "eori.b" },

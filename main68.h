@@ -22,7 +22,7 @@
 #ifndef _MAIN68_H
 #define _MAIN68_H
 #include "mytypes.h"
-#include "portab.h"
+#include "ctype.h"
 
 #define nelem(x)	(sizeof(x)/sizeof((x)[0]))
 #define GETLINE(buf) getline(buf,nelem(buf))
@@ -53,7 +53,6 @@ void exit(int status);
 int cprintf(char const *fmt, ...);
 int uc_string(char *str, int length);
 int getline(char *line, int linesize);
-void prbuf(dword addr, byte *buf, int n);
 void regdump(void);
 
 #endif  // _MAIN68_H

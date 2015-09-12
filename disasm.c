@@ -11,7 +11,7 @@
 /*  Control:  11 MAY 83  11:31  (TMB)					*/
 /*									*/
 /************************************************************************/
-#include "portab.h"
+#include "ctype.h"
 //#include "ddt/lgcdef.h"
 //#include "ddt/cputype.h"
 //#include "ddt/siddef.h"
@@ -37,8 +37,8 @@ extern const char nstring[];
 /************************************************************************/
 
 
-MLOCAL char *dot, *sdot;
-MLOCAL int dotinc;
+static char *dot, *sdot;
+static int dotinc;
 
 
 int pinstr(long ip)
@@ -48,18 +48,18 @@ int pinstr(long ip)
 /*									*/
 /************************************************************************/
 {
-   REG struct optbl *p;
+   register struct optbl *p;
 
         dot = (char*)ip;
 
 
 #if NEW_STUFF
         				/**temp** Next several lines added recently */
-   REG WORD reg;
-   EXTERN struct lmhedr *caput;
-   EXTERN WORD scope; 
-   EXTERN BYTE ref;
-   EXTERN LONG inhalt;
+   register short reg;
+   extern struct lmhedr *caput;
+   extern short scope; 
+   extern char ref;
+   extern long inhalt;
         				/**temp** End of added stuff	*/
         				/**temp** Next several lines added recently */
    ref = '\0';				/* Mark "not in use"		*/
@@ -72,7 +72,7 @@ int pinstr(long ip)
         instr = *(short*) dot;			/* instruction in binary	*/
 
         p = (void*)&optab;				/* sequential search = (n+1)/2	*/
-        while(TRUE) {			/* last table entry matches anything */
+        while(1) {			/* last table entry matches anything */
         		if( (instr & (p->inmsk)) == p->invalu)
         			break;			/* found it			*/
         		p++;
@@ -119,19 +119,19 @@ int pinstr(long ip)
 }
 
 
-VOID noin(void)
+void noin(void)
 {
     stout("illegal instruction format #\n");
     return;
 }
 
 
-VOID
+void
 inf1(void)
 /************************************************************************/
 /*									*/
 /*   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+  */
-/*   | x | x | x | x |  REG  Rx  | x |  SIZE | x | x |R/M|  REG  Ry  |  */
+/*   | x | x | x | x |  register  Rx  | x |  SIZE | x | x |R/M|  REG  Ry  |  */
 /*   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+  */
 /*									*/
 /*	Covers the following instructions:				*/
@@ -139,7 +139,7 @@ inf1(void)
 /*									*/
 /************************************************************************/
 {
-    REG WORD i;
+    register short i;
  
 
     i = (instr & 0x0E00) >> 9;
@@ -157,8 +157,8 @@ inf1(void)
 }
 
 
-VOID
-inf2(VOID)
+void
+inf2(void)
 /************************************************************************/
 /*									*/
 /*					     |   EFFECTIVE ADDRESS   |	*/
@@ -171,8 +171,8 @@ inf2(VOID)
 /*									*/
 /************************************************************************/
 {
-    REG WORD reg;
-    REG WORD mode;
+    register short reg;
+    register short mode;
 
 
     reg = ( (instr & 0x0E00) >> 9);
@@ -206,17 +206,17 @@ inf2(VOID)
 }
 
 
-VOID
-inf3(VOID)
+void
+inf3(void)
 /************************************************************************/
 /*									*/
 /*					       EFFECTIVE    ADDRESS	*/
 /*   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+  */
 /*   | x | x | x | x | x | x | x | x |  SIZE |    MODE   | REGISTER  |  */
 /*   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+  */
-/*   |      WORD DATA (16 bits)      |      BYTE DATA (8 bits)       |  */
+/*   |      short DATA (16 bits)      |      char DATA (8 bits)       |  */
 /*   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+  */
-/*   |   LONG DATA (32 bits, including previous word)		     |  */
+/*   |   long DATA (32 bits, including previous word)		     |  */
 /*   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+  */
 /*									*/
 /*	Covers the following instructions:				*/
@@ -224,7 +224,7 @@ inf3(VOID)
 /*									*/
 /************************************************************************/
 {
-    REG WORD size;
+    register short size;
  
 
     size = (instr & 0x00C0) >> 6;		/* Print out the size of the	*/
@@ -252,8 +252,8 @@ inf3(VOID)
 }
 
 
-VOID
-inf4(VOID)
+void
+inf4(void)
 /************************************************************************/
 /*									*/
 /*					     |   EFFECTIVE ADDRESS   |  */
@@ -265,7 +265,7 @@ inf4(VOID)
 /*		ADDQ, SUBQ						*/
 /************************************************************************/
 {
-    REG WORD i;
+    register short i;
  
 
     i = (instr & 0x0E00) >> 9;
@@ -273,7 +273,7 @@ inf4(VOID)
         i = 8;
 
     stout("#$");
-    hexbzs( (BYTE)i);
+    hexbzs( (char)i);
     putchar(',');
 
     prtop((instr & 077),WORDSZ);
@@ -281,8 +281,8 @@ inf4(VOID)
 
 
 
-VOID
-inf5(VOID)
+void
+inf5(void)
 /************************************************************************/
 /*									*/
 /*					     |   EFFECTIVE ADDRESS   |	*/
@@ -295,7 +295,7 @@ inf5(VOID)
 /*									*/
 /************************************************************************/
 {
-    REG WORD i;
+    register short i;
  
 
     i = instr & 0x0600;
@@ -316,12 +316,12 @@ inf5(VOID)
 
 
 
-VOID
-inf6(VOID)
+void
+inf6(void)
 /************************************************************************/
 /*									*/
 /*   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+  */
-/*   | x | x | x | x | COUNT/REG | DR|  SIZE |I/R| x | x |  REGISTER |  */
+/*   | x | x | x | x | COUNT/register | DR|  SIZE |I/R| x | x |  REGISTER |  */
 /*   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+  */
 /*									*/
 /*	Covers the following instructions:				*/
@@ -329,7 +329,7 @@ inf6(VOID)
 /*									*/
 /************************************************************************/
 {
-    REG WORD i;
+    register short i;
  
 
     i = (instr & 0x0E00) >> 9;		/* get register number and find	*/
@@ -341,7 +341,7 @@ inf6(VOID)
         if(i == 0)			/* A zero denotes 8 bits all	*/
             i = 8;			/* others the same		*/
         putchar('#');			/* print the immediate value	*/
-        hexbzs((BYTE)i);
+        hexbzs((char)i);
     }
 
     putchar(',');			/* Then....			*/
@@ -351,8 +351,8 @@ inf6(VOID)
 
 
 
-VOID
-inf7(VOID)
+void
+inf7(void)
 /************************************************************************/
 /*									*/
 /*					     | EFFECTIVE    ADDRESS  |  */
@@ -373,8 +373,8 @@ inf7(VOID)
 
 
 
-VOID
-inf8(VOID)
+void
+inf8(void)
 /************************************************************************/
 /*									*/
 /*   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+  */
@@ -390,16 +390,16 @@ inf8(VOID)
 /*									*/
 /************************************************************************/
 {
-    REG WORD i;				/* temp for 8-bit displacement	*/
+    register short i;				/* temp for 8-bit displacement	*/
     char *p;
  
 
-    i = (BYTE)instr;
+    i = (char)instr;
 #if M68000 >= 68020
     if (i == -1) {			/* 68020 and higher long displacement */
-	 		LONG disp = *(short*)sdot;
+	 		long disp = *(short*)sdot;
 			disp <<= 16;
-			disp |= *(UWORD*)(sdot+2);
+			disp |= *(unsigned short*)(sdot+2);
         	p = sdot + disp;		/* displacement = current local	*/
         	sdot += 4;			   /* + the next word.  Bump the	*/
         	dotinc += 4;			/* counters accordingly		*/
@@ -417,12 +417,12 @@ inf8(VOID)
     }
 
     stout("$");				/* Print the hex value of the	*/
-    hexlzs((LONG)p);				/* displacement.		*/
+    hexlzs((long)p);				/* displacement.		*/
 }
 
 
-VOID
-inf9(VOID)
+void
+inf9(void)
 /************************************************************************/
 /*									*/
 /*					     | EFFECTIVE    ADDRESS  |  */
@@ -435,7 +435,7 @@ inf9(VOID)
 /*									*/
 /************************************************************************/
 {
-    REG WORD i;
+    register short i;
  
 
     prtop( (instr & 077),WORDSZ);		/* print the Effective Address	*/
@@ -447,8 +447,8 @@ inf9(VOID)
 }
 
 
-VOID
-inf10(VOID)
+void
+inf10(void)
 /************************************************************************/
 /*									*/
 /*					     |   EFFECTIVE ADDRESS   |	*/
@@ -478,8 +478,8 @@ inf10(VOID)
 
 
 
-VOID
-inf11(VOID)
+void
+inf11(void)
 /************************************************************************/
 /*									*/
 /*   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+  */
@@ -491,7 +491,7 @@ inf11(VOID)
 /*									*/
 /************************************************************************/
 {
-    REG WORD i;
+    register short i;
  
 
     paripi(instr & 7);			/* Prints source address then	*/
@@ -502,8 +502,8 @@ inf11(VOID)
 
 
 
-VOID
-inf12(VOID)
+void
+inf12(void)
 /************************************************************************/
 /*									*/
 /*   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+  */
@@ -530,13 +530,13 @@ inf12(VOID)
     sdot += 2;				/* the diaplacement.  Bump all	*/
     dotinc += 2;			/* pointers then print disp.	*/
 
-    hexlzs((LONG)p);
+    hexlzs((long)p);
 }
 
 
 
-VOID
-inf13(VOID)
+void
+inf13(void)
 /************************************************************************/
 /*									*/
 /*   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+  */
@@ -548,9 +548,9 @@ inf13(VOID)
 /*									*/
 /************************************************************************/
 {
-    REG WORD rx;
-    REG WORD ry;
-    REG WORD opmde;
+    register short rx;
+    register short ry;
+    register short opmde;
  
 
     rx = (instr & 0x0E00) >> 9;
@@ -572,8 +572,8 @@ inf13(VOID)
 
 
 
-VOID
-inf14(VOID)
+void
+inf14(void)
 /************************************************************************/
 /*									*/
 /*   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+  */
@@ -585,7 +585,7 @@ inf14(VOID)
 /*									*/
 /************************************************************************/
 {
-    REG WORD i;
+    register short i;
 
 
     i = instr & 07;			/* Print out Data Register	*/
@@ -593,8 +593,8 @@ inf14(VOID)
 }
 
 
-VOID
-inf15(VOID)
+void
+inf15(void)
 /************************************************************************/
 /*									*/
 /*   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+  */
@@ -618,8 +618,8 @@ inf15(VOID)
 }
 
 
-VOID
-inf16(VOID)
+void
+inf16(void)
 /************************************************************************/
 /*									*/
 /*		     |      DESTINATION	     |		SOURCE	     |	*/
@@ -632,8 +632,8 @@ inf16(VOID)
 /*									*/
 /************************************************************************/
 {
-    REG WORD size;
-    REG WORD i;
+    register short size;
+    register short i;
  
 
     i = instr & 0x3000;			/* determine the size		*/
@@ -657,8 +657,8 @@ inf16(VOID)
 
 
 
-VOID
-inf17(VOID)
+void
+inf17(void)
 /************************************************************************/
 /*									*/
 /*   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+  */
@@ -670,7 +670,7 @@ inf17(VOID)
 /*									*/
 /************************************************************************/
 {
-    REG WORD i;
+    register short i;
  
 
     i = instr & 7;
@@ -686,12 +686,12 @@ inf17(VOID)
 
 
 
-CONST WORD regmsk0[] = {0100000,040000,020000,010000,04000,02000,01000,0400,0200,
+const short regmsk0[] = {0100000,040000,020000,010000,04000,02000,01000,0400,0200,
         			0100,040,020,010,4,2,1};
-CONST WORD regmsk1[] = {1,2,4,010,020,040,0100,0200,0400,01000,02000,04000,010000,
+const short regmsk1[] = {1,2,4,010,020,040,0100,0200,0400,01000,02000,04000,010000,
         			020000,040000,0100000};
-VOID
-inf18(VOID)
+void
+inf18(void)
 /************************************************************************/
 /*									*/
 /*					     |   EFFECTIVE ADDRESS   |  */
@@ -706,7 +706,7 @@ inf18(VOID)
 /*									*/
 /************************************************************************/
 {
-    REG WORD rlm; 
+    register short rlm; 
 
 
     rlm = *(short*)sdot;
@@ -730,12 +730,12 @@ inf18(VOID)
 }
 
 
-VOID
-inf19(VOID)
+void
+inf19(void)
 /************************************************************************/
 /*									*/
 /*   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+  */
-/*   | x | x | x | x | DATA REG  |  OP-MODE  | x | x | x | ADDR REG  |  */
+/*   | x | x | x | x | DATA register  |  OP-MODE  | x | x | x | ADDR REG  |  */
 /*   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+  */
 /*   |				DISPLACEMENT			     |  */
 /*   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+  */
@@ -745,8 +745,8 @@ inf19(VOID)
 /*									*/
 /************************************************************************/
 {
-    REG WORD i;
-    REG WORD j;
+    register short i;
+    register short j;
  
 
     i = instr & 0x0180;			/* Get transfer direction	*/
@@ -770,8 +770,8 @@ inf19(VOID)
 }
 
 
-VOID
-inf20(VOID)
+void
+inf20(void)
 /************************************************************************/
 /*									*/
 /*   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+  */
@@ -785,15 +785,15 @@ inf20(VOID)
 {
 
     stout("#$");
-    hexbzs((BYTE)(instr & 0x00FF));
+    hexbzs((char)(instr & 0x00FF));
     putchar(',');
 
     prtreg((instr & 0x0E00) >> 9);
 }
 
 
-VOID
-inf21(VOID)
+void
+inf21(void)
 /************************************************************************/
 /*									*/
 /*   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+  */
@@ -812,8 +812,8 @@ inf21(VOID)
 }
 
 
-VOID
-inf22(VOID)
+void
+inf22(void)
 /************************************************************************/
 /*									*/
 /*   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+  */
@@ -830,8 +830,8 @@ inf22(VOID)
 }
 
 
-VOID
-inf23(VOID)
+void
+inf23(void)
 /************************************************************************/
 /*									*/
 /*   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+	*/
@@ -844,12 +844,12 @@ inf23(VOID)
 /************************************************************************/
 {
     stout("#$");
-    hexbzs((BYTE)(instr & 0x000F));
+    hexbzs((char)(instr & 0x000F));
 }
 
 
-VOID
-inf24(VOID)
+void
+inf24(void)
 /************************************************************************/
 /*									*/
 /*   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+  */
@@ -863,9 +863,9 @@ inf24(VOID)
 /*									*/
 /************************************************************************/
 {
-    REG WORD creg;
-    REG WORD rreg;
-    REG WORD i;
+    register short creg;
+    register short rreg;
+    register short i;
 
 
     i = *(short*)sdot;
@@ -905,8 +905,8 @@ inf24(VOID)
 }
 
 
-VOID
-inf25(VOID)
+void
+inf25(void)
 /************************************************************************/
 /*									*/
 /*					     |   EFFECTIVE ADDRESS   |	*/
@@ -921,9 +921,9 @@ inf25(VOID)
 /*									*/
 /************************************************************************/
 {
-    REG WORD rreg;
-    REG WORD size;
-    REG WORD i;
+    register short rreg;
+    register short size;
+    register short i;
 
 
     size = instr & 0x00C0;		/* get the size			*/
@@ -949,17 +949,17 @@ inf25(VOID)
 }
 
 
-VOID putrlist(CONST WORD *ap, WORD mask)
+void putrlist(const short *ap, short mask)
 /************************************************************************/
 /*									*/
 /*			PUT Register LIST				*/
 /*									*/
 /************************************************************************/
 {
-    REG WORD i;
-    REG CONST WORD *p;
-    REG WORD lmsk;
-    REG WORD j;
+    register short i;
+    register const short *p;
+    register short lmsk;
+    register short j;
  
 
     lmsk = mask;
@@ -993,7 +993,7 @@ VOID putrlist(CONST WORD *ap, WORD mask)
 }
 
 
-VOID pdr(WORD r)
+void pdr(short r)
 /************************************************************************/
 /*									*/
 /*		Print Data Register					*/
@@ -1007,7 +1007,7 @@ VOID pdr(WORD r)
 }
 
 
-VOID par(WORD r)
+void par(short r)
 /************************************************************************/
 /*									*/
 /*	Print Address Register						*/
@@ -1022,7 +1022,7 @@ VOID par(WORD r)
 }
 
 
-VOID pdri(WORD r)
+void pdri(short r)
 /************************************************************************/
 /*									*/
 /*	Print Data Register Inderect					*/
@@ -1035,7 +1035,7 @@ VOID pdri(WORD r)
 }
 
 
-VOID pari(WORD r)
+void pari(short r)
 /************************************************************************/
 /*									*/
 /*	Print Address Register Indirect					*/
@@ -1049,7 +1049,7 @@ VOID pari(WORD r)
 }
 
 
-VOID paripd(WORD r)
+void paripd(short r)
 /************************************************************************/
 /*									*/
 /*	Print Address Register Indirect PreDecrement			*/
@@ -1062,7 +1062,7 @@ VOID paripd(WORD r)
 }
 
 
-VOID paripi(WORD r)
+void paripi(short r)
 /************************************************************************/
 /*									*/
 /*	Print Address Register Indirect Post Increment			*/
@@ -1074,7 +1074,7 @@ VOID paripi(WORD r)
 }
 
 
-VOID hexlzs(LONG n)
+void hexlzs(long n)
 /************************************************************************/
 /*									*/
 /*			write a long integer in hex			*/
@@ -1082,8 +1082,8 @@ VOID hexlzs(LONG n)
 /************************************************************************/
 {
 #if NEW_STUFF
-    EXTERN LONG inhalt;
-    EXTERN BYTE ref;
+    extern long inhalt;
+    extern char ref;
 
 
     inhalt = n;
@@ -1095,7 +1095,7 @@ VOID hexlzs(LONG n)
 
 
 
-VOID hexwzs(WORD n)
+void hexwzs(short n)
 /************************************************************************/
 /*									*/
 /*			write an integer in hex				*/
@@ -1103,23 +1103,23 @@ VOID hexwzs(WORD n)
 /************************************************************************/
 {
 
-    puthex((LONG)n, 16, 1);
+    puthex((long)n, 16, 1);
 }
 
 
 
-VOID hexbzs(BYTE n)
+void hexbzs(char n)
 /************************************************************************/
 /*									*/
 /*			write a byte as a hex integer			*/
 /*									*/
 /************************************************************************/
 {
-    puthex((LONG)n, 8, 1);
+    puthex((long)n, 8, 1);
 }
 
 
-VOID badsize(VOID)
+void badsize(void)
 /************************************************************************/
 /*									*/
 /*			The SIZE field is wrong				*/
@@ -1131,14 +1131,14 @@ VOID badsize(VOID)
 }
 
 
-VOID prtreg(WORD areg)
+void prtreg(short areg)
 /************************************************************************/
 /*									*/
-/*	Print the register specified in AREG				*/
+/*	Print the register specified in Aregister				*/
 /*									*/
 /************************************************************************/
 {
-    REG WORD reg;
+    register short reg;
  
 
     reg = areg;
@@ -1152,14 +1152,14 @@ VOID prtreg(WORD areg)
 
 
 
-VOID prdisp(VOID)
+void prdisp(void)
 /************************************************************************/
 /*									*/
 /*			PRint DISPlacement				*/
 /*									*/
 /************************************************************************/
 {
-    REG WORD i;
+    register short i;
 
 
     i = *(short*)sdot;
@@ -1170,14 +1170,14 @@ VOID prdisp(VOID)
 }
 
 
-VOID prindex(WORD areg)
+void prindex(short areg)
 /************************************************************************/
 /*									*/
 /*		Address Register Indirect With Index			*/
 /*									*/
 /************************************************************************/
 {
-    REG WORD i;
+    register short i;
 
 #if M68000 < 68020 
 /* DEBUG */
@@ -1188,7 +1188,7 @@ VOID prindex(WORD areg)
     dotinc += 2;
 
     putchar('$');
-    hexbzs((BYTE)(i & 0x00FF));
+    hexbzs((char)(i & 0x00FF));
 
     putchar('(');
 
@@ -1207,8 +1207,8 @@ VOID prindex(WORD areg)
     putchar(')');
 
 #else
-	 UWORD scale, bs, bd_size, is, iis, comma;
-	 LONG bd, od;
+	 unsigned short scale, bs, bd_size, is, iis, comma;
+	 long bd, od;
 
 /* all of the 68020 addressing is below here */
 /* DEBUG */
@@ -1233,7 +1233,7 @@ VOID prindex(WORD areg)
 		  }
 		  if (bd_size > 2) {
 		  		 bd <<= 16;
-		  		 bd += *(UWORD*)sdot;
+		  		 bd += *(unsigned short*)sdot;
 				 sdot += 2;
 				 dotinc += 2;
 		  }
@@ -1244,13 +1244,13 @@ VOID prindex(WORD areg)
 		  }
 		  if ((iis & 3) > 2) {
 		  		 od <<= 16;
-		  		 od += *(UWORD*)sdot;
+		  		 od += *(unsigned short*)sdot;
 				 sdot += 2;
 				 dotinc += 2;
 		  }
 	 } else {
 		  bs = bd_size = is = iis = 0;
-		  bd = (BYTE)(i & 0xFF);
+		  bd = (char)(i & 0xFF);
 	 }
 
 	 comma = 0;
@@ -1259,9 +1259,9 @@ VOID prindex(WORD areg)
 	 if (bd_size != 1) {
 		  putchar('$');
 		  switch(bd_size) {
-		  case 0:  hexbzs((BYTE)bd); break;
-		  case 2:  hexwzs((WORD)bd); break;
-		  case 3:  hexlzs((LONG)bd); break;
+		  case 0:  hexbzs((char)bd); break;
+		  case 2:  hexwzs((short)bd); break;
+		  case 3:  hexlzs((long)bd); break;
 		  }
 		  comma = 1;
 	 }
@@ -1306,8 +1306,8 @@ VOID prindex(WORD areg)
 	 if ( iis & 2 ) {
 		  if (comma) putchar(',');
 	     putchar('$');
-	     if ( iis & 1 ) hexlzs((LONG)od);
-		  else   hexwzs((WORD)od);
+	     if ( iis & 1 ) hexlzs((long)od);
+		  else   hexwzs((short)od);
 	 }
 	 putchar(')');
 
@@ -1316,27 +1316,27 @@ VOID prindex(WORD areg)
 
 
 
-VOID primm(WORD asize)
+void primm(short asize)
 /************************************************************************/
 /*									*/
 /*			Print out Immediate value 			*/
 /*									*/
 /************************************************************************/
 {
-    LONG l1;
+    long l1;
  
 
     l1 = 0;				/* initialize for safety	*/
 
     if (asize == LONGSZ) {		/* Determine whether it is a 	*/
-        	l1 = *(short*) sdot;		/* LONG immediate value.  Get	*/
+        	l1 = *(short*) sdot;		/* long immediate value.  Get	*/
         	l1 <<= 16;
         	sdot += 2;			/* value and bump pointers if so*/
         	dotinc += 2;
     }
 
-    l1 |= *(UWORD*)sdot;		/* get loword value if LONG else*/
-    sdot += 2;				/* default to WORD or BYTE	*/
+    l1 |= *(unsigned short*)sdot;		/* get loword value if long else*/
+    sdot += 2;				/* default to short or char	*/
     dotinc += 2;
 
     stout("#$");			/* print out immediate value in	*/
@@ -1344,19 +1344,19 @@ VOID primm(WORD asize)
 }
 
 
-VOID
-prtop(WORD adrtype, WORD asize)
+void
+prtop(short adrtype, short asize)
 /************************************************************************/
 /*									*/
 /*		Print the Effective Address				*/
 /*									*/
 /************************************************************************/
 {
-    REG WORD reg;
-    REG WORD mode;
-//    REG WORD defer;
-    LONG la;
-    REG LONG p;
+    register short reg;
+    register short mode;
+//    register short defer;
+    long la;
+    register long p;
  
 
     mode = (adrtype & 070) >> 3;
@@ -1420,7 +1420,7 @@ prtop(WORD adrtype, WORD asize)
             sdot += 2;
             dotinc += 2;
 
-            la += *(UWORD*)sdot;
+            la += *(unsigned short*)sdot;
             sdot += 2;
             dotinc += 2;
 

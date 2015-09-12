@@ -42,12 +42,12 @@ INC =
 
 SFILES = mfpic.s memtest.s memtest2.s uart.s ns202def.s biostrap.s error.s ppi.s allide.s siodef.s
 HFILES = mytypes.h packer.h mfpic.h ns202.h dosdisk.h ide.h main68.h crc32.h \
-  portab.h coff.h myide.h rtc.h io.h fdc8272.h wd37c65.h debug.h version.h
-HSFILES = portab.h optab.h disasm.h
+  coff.h myide.h rtc.h io.h fdc8272.h wd37c65.h debug.h version.h
+HSFILES = optab.h disasm.h
 OFILES = main68.o serial.o rtc.o ds1302.o cprintf.o packer.o \
 	pic202.o ns202.o ppide.o dualide.o bios8.o strtoul.o malloc.o \
 	dualsd.o crctab.o bioscall.o fdc8272.o wd37c65.o floppy.o setup.o \
-	debug.o beetle.o disasm.o mem4mem.o prettydump.o
+	debug.o beetle.o disasm.o mem4mem.o prettydump.o diskio.o ff.o
 CSFILES = main68.s cprintf.s packer.s ns202.s crc32.s malloc.s setup.s \
 	rtc.s strtoul.s fdc8272.s wd37c65.s ppide2.s debug.s disasm.s
 
@@ -256,7 +256,7 @@ daytime.mod:	daytime.out
 		grep -v "set to" | sed "s/.text/     /" > $*.mod
 
 
-cfdisk.o:	cfdisk.c cfdisk.h mytypes.h portab.h bioscall.h ide.h packer.h
+cfdisk.o:	cfdisk.c cfdisk.h mytypes.h bioscall.h ide.h packer.h
 	$(CC) -S $(COPT) $*.c
 	$(AS) $(AOPT) -a=$*.lst -o $*.o $*.s
 

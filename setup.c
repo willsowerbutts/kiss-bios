@@ -128,6 +128,42 @@ int setup_dide_disk(void)
 }
 #endif
 
+int sio_get(void);
+
+void prline(byte *buff)
+{       /* print a line of 16 byte values */
+    word i, j;
+    byte *buf = buff;
+    for (j=2; j--; ) {
+        for (i=8; i--; ) {
+            cprintf(" %02x", (int)(*buf++));
+        }
+        cprintf(" ");
+    }
+    cprintf(" ");
+    buf = buff;
+    for (i=16; i--; buf++) cprintf("%c", *buf>=' ' && *buf<0177 ? *buf : '.');
+}
+
+void prbuf(dword addr, byte *buf, int n)
+{
+    word i;
+    int ch;
+    while (n>0) {
+        for (i=0; i<8 && n>0; i++) {
+            cprintf("\n%04x: ", addr);
+            prline(buf);
+            buf+=16;
+            addr+=16;
+            n-=16;
+        }
+        cprintf("\n");
+        if (n>0) {
+            do ch = sio_get();
+            while (ch<0);
+        }
+    }
+}
 
 #define int_to_disk(x) ('A'+(x))
 #define disk_to_int(c) (toupper(c)-'A')

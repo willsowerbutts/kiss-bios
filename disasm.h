@@ -52,7 +52,7 @@
  
  
 //int ssval[NUMSS];               /* special symbol values */
-WORD instr;              /* holds instruction first word */
+short instr;              /* holds instruction first short */
  
 #define BYTESZ 0
 #define WORDSZ 1
@@ -77,50 +77,50 @@ WORD instr;              /* holds instruction first word */
 /* end of original DISAS.H */
 
 
-// VOID pinstr(VOID);
+// void pinstr(void);
 int pinstr(long ip);
 
-VOID noin(VOID);
-VOID inf1(VOID);
-VOID inf2(VOID);
-VOID inf3(VOID);
-VOID inf4(VOID);
-VOID inf5(VOID);
-VOID inf6(VOID);
-VOID inf7(VOID);
-VOID inf8(VOID);
-VOID inf9(VOID);
-VOID inf10(VOID);
-VOID inf11(VOID);
-VOID inf12(VOID);
-VOID inf13(VOID);
-VOID inf14(VOID);
-VOID inf15(VOID);
-VOID inf16(VOID);
-VOID inf17(VOID);
-VOID inf18(VOID);
-VOID inf19(VOID);
-VOID inf20(VOID);
-VOID inf21(VOID);
-VOID inf22(VOID);
-VOID inf23(VOID);
-VOID inf24(VOID);
-VOID inf25(VOID);
-VOID putrlist(CONST WORD *ap, WORD mask);
-VOID pdr(WORD r);
-VOID par(WORD r);
-VOID pdri(WORD r);
-VOID pari(WORD r);
-VOID paripd(WORD r);
-VOID paripi(WORD r);
-VOID hexlzs(LONG n);
-VOID hexwzs(WORD n);
-VOID hexbzs(BYTE n);
-VOID badsize(VOID);
-VOID prtreg(WORD areg);
-VOID prdisp(VOID);
-VOID prindex(WORD areg);
-VOID primm(WORD asize);
-VOID prtop(WORD adrtype, WORD asize);
+void noin(void);
+void inf1(void);
+void inf2(void);
+void inf3(void);
+void inf4(void);
+void inf5(void);
+void inf6(void);
+void inf7(void);
+void inf8(void);
+void inf9(void);
+void inf10(void);
+void inf11(void);
+void inf12(void);
+void inf13(void);
+void inf14(void);
+void inf15(void);
+void inf16(void);
+void inf17(void);
+void inf18(void);
+void inf19(void);
+void inf20(void);
+void inf21(void);
+void inf22(void);
+void inf23(void);
+void inf24(void);
+void inf25(void);
+void putrlist(const short *ap, short mask);
+void pdr(short r);
+void par(short r);
+void pdri(short r);
+void pari(short r);
+void paripd(short r);
+void paripi(short r);
+void hexlzs(long n);
+void hexwzs(short n);
+void hexbzs(char n);
+void badsize(void);
+void prtreg(short areg);
+void prdisp(void);
+void prindex(short areg);
+void primm(short asize);
+void prtop(short adrtype, short asize);
 
 #endif // _DISASM_H
