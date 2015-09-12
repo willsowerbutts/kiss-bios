@@ -1,7 +1,7 @@
 /* ns202def.s	*/
 /*
-	Copyright (C) 2011,2015 John R. Coffman.
-	Licensed for hobbyist use only.
+	Copyright (C) 2011 John R. Coffman.
+	Licensed for hobbyist use on the N8VEM baby M68k CPU board.
 ***********************************************************************
 
     This program is free software: you can redistribute it and/or modify
@@ -54,9 +54,9 @@ hccv	        = 30	     /*w	  h-counter current value	*/
 
 eoi             = hvct+32    /*b   read for End Of Interrupt signal	*/
 
-/* these values must be the same as in 'ns202.h' */
+
 counter_clock	=	1843200    /* input counter (no prescaling yet) */
-high_byte	=	25	   /* special values needed here */
+hi_byte	=	25			/* special values needed here */
 
 
 /*    xwxwxwxwbbbbbbbbxwxwxwxwxwxwxwbb	*/

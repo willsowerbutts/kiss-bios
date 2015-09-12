@@ -43,7 +43,7 @@ interrupt_3_timer:
 
 	move.w	timer_ticks,%d0	/* get low count + rollover flag */
 	add.w	#1,%d0		/* increment the low count byte */
-	cmp.w	#high_byte,%d0
+	cmp.w	#hi_byte,%d0
 	bcs.s	no_zap
 
 	add.l	#1,julian_day	/* increment the day counter */
@@ -92,7 +92,6 @@ end_of_interrupt:
 **********************************************************************/
 	.globl	usec_delay
 usec_delay:
-.if (M68000<68020)
 	move.l	%d1,-(%sp)	/* save D1 */
 	lsr	#4,%d0		/* divide by 16 */
 	move.l	%d0,%d1		/* D0.w is the low count */
@@ -103,32 +102,19 @@ ud1:
 	dbra.w	%d1,ud1		/* count down to -1 */
 
 	move.l	(%sp)+,%d1	/* restore D1 */
-.else
-**********************************************************************/
-**********************************************************************/
-	add.l	%d0,%d0		/* 0.5usec per count, approx. */
-	br.s	ud3
-ud1:	swap	%d0
-ud2:	nop
-ud3:	dbra	%d0,ud2
-	swap	%d0
-	dbra	%d0,ud1
-.endif
-**********************************************************************/
 	rts
 
-	.globl	usec20
-	.globl	usec16
-	.globl	usec12
-	.globl	usec10
-	.globl	usec09
 
-.if (M68000<68020)
 # delay XX usec (microseconds)
 # on M68008 @ 8mhz 
 #	JSR	().l	= 5 usec
 #	RTS		= 4 usec
 #	NOP		= 1 usec
+	.globl	usec20
+	.globl	usec16
+	.globl	usec12
+	.globl	usec10
+	.globl	usec09
 usec20:
 	nop
 	nop
@@ -147,18 +133,7 @@ usec10:
 	nop
 usec09:
 	rts
-.else
-usec20:
-usec16:
-usec12:
-usec10:
-usec09:
-	move.l	%d0,-(%sp)	/* save D0 */
-	move.l	#20,%d0
-	bsr.s	usec_delay
-	move.l	(%sp)+,%d0	/* restore D0 */
-	rts
-.endif
+
 
 /*
 #--------------------------------------------------------------------------

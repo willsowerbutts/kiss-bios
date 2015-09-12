@@ -80,10 +80,8 @@
 
 /* counter_clock	=	1843200     input counter (no prescaling yet) */
 #define counter_clock 1843200
-#define high_byte 25
-/* the above values must be the same as in 'ns202def.s' */
-
 #define hertz (counter_clock/4)
+#define high_byte 25
 
 
 /*    xwxwxwxwbbbbbbbbxwxwxwxwxwxwxwbb	*/

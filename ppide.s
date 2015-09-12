@@ -43,8 +43,6 @@ buffer	= 	arg2
 #
 #	
 
-
-
 	.even
 # -----------------------------------------------------------------------------	
 #  ppide_read_id
@@ -61,36 +59,37 @@ buffer	= 	arg2
 		.globl	ppide_info
 ppide_read_id:
 ppide_info:
+
 	move.l	(buffer,%sp),%a0		/* get buffer address */
 
 	move	%a0,%d0				/* test for NULL */
 	tst.l	%d0
-	jbeq	short_info			/* LBA & GEOM info only */
+	beq.s	short_info			/* LBA & GEOM info only */
 
-	jbsr	ide_wait_not_busy	/* make sure drive is ready */
-	jbne	error_return
+	bsr	ide_wait_not_busy	/* make sure drive is ready */
+	bne	error_return
 
 	move.b	(disk_slave_o,%a1),%d1	/* get slave byte */
 	and.b	#0x10,%d1		/* for safety */
 	or.b	#0xE0,%d1		/* select LBA mode */
 	move.b	#ide_head,%d0		/* write to head register */
-	jbsr	ide_write
+	bsr	ide_write
 
 	move.b	#ide_command,%d0
 	move.w	#ide_cmd_id,%d1
-	jbsr	ide_write		/* ask the drive to read the ID */
+	bsr	ide_write		/* ask the drive to read the ID */
 
-	jbsr	ide_wait_drq		/* wait until it's got the data */
-	jbne	error_return
+	bsr	ide_wait_drq		/* wait until it's got the data */
+	bne	error_return
 
-	jbsr	read_data		/* get the data */
+	bsr	read_data		/* get the data */
 
 short_info:
 	move.l	disk_lba_o(%a1),%d2		/* LBA info return */
 	move.l	%d2,arg1(%sp)
 	move.l	disk_geom_o(%a1),%d2		/* geometry return */
 
-	jbra	get_error_status
+	bra	get_error_status
 
 
 
@@ -114,38 +113,38 @@ ppide_read:
 	move.l	(buffer,%sp),%a0		/* get buffer address */
 	move.l	#5,%d0				/* error code */
 	cmp.l	(disk_lba_o,%a1),%d2		/* check lba address */
-	jbcc	read_error
+	bcc.s	read_error
 
 	move.l	#4,%d0				/* error code */
 	cmp.l	#1,%d3
-	jbne	read_error			/* for now */
+	bne.s	read_error			/* for now */
 
-	jbsr	ide_wait_not_busy	/* make sure drive is ready */
-	jbne	read_error			/* %D0 == -1 */
+	bsr	ide_wait_not_busy	/* make sure drive is ready */
+	bne.s	read_error			/* %D0 == -1 */
 
-	jbsr	wr_lba			/* select device */
+	bsr	wr_lba			/* select device */
 
 	move.b	#ide_command,%d0
 	move.w	#ide_cmd_read,%d1
-	jbsr	ide_write
+	bsr	ide_write
 	
-	jbsr	ide_wait_drq		/* wait until it's got the data */
-	jbne	read_error			/* %D0 == -1 */
+	bsr	ide_wait_drq		/* wait until it's got the data */
+	bne.s	read_error			/* %D0 == -1 */
 
-	jbsr	read_data		/* get the data */
+	bsr	read_data		/* get the data */
 
 get_error_status:
-	jbsr	ide_wait_not_busy	/* make sure drive is ready */
-	jbne	read_error			/* %D0 == -1 */
+	bsr	ide_wait_not_busy	/* make sure drive is ready */
+	bne.s	read_error			/* %D0 == -1 */
 
 	move.b	#ide_status,%d0
-	jbsr	ide_read
+	bsr	ide_read
 
 	and.l	#1,%d1			/* check error bit */
-	jbeq	exg_return
+	beq.s	exg_return
 	
 	move.b	#ide_err,%d0
-	jbsr	ide_read
+	bsr	ide_read
 
 	and.l	#0xFF,%d1		/* mask to byte */
 	or.w	#0x800,%d1
@@ -177,23 +176,23 @@ good_return:
 #-----------------------------------------------------------------------------
 	.even
 
-	jbsr	ide_wait_not_busy	/* make sure drive is ready */
-	jbne	error_return
+	bsr	ide_wait_not_busy	/* make sure drive is ready */
+	bne	error_return
 
 	move.l	8(%a6),%d3		/* logical block number */
 	move.l	12(%a6),%d2		/* master/slave */
-	jbsr	wr_lba			/* select device */
+	bsr	wr_lba			/* select device */
 
 	move.b	#ide_command,%d0
 	move.w	#ide_cmd_read,%d1
-	jbsr	ide_write
+	bsr	ide_write
 	
-	jbsr	ide_wait_drq		/* wait until it's got the data */
-	jbne	error_return
+	bsr	ide_wait_drq		/* wait until it's got the data */
+	bne	error_return
 
-	jbsr	verify_data		/* get the data */
+	bsr	verify_data		/* get the data */
 
-	jbra	get_error_status
+	bra	get_error_status
 
 
 
@@ -218,27 +217,27 @@ ppide_write:
 	move.l	(buffer,%sp),%a0		/* get buffer address */
 	move.l	#5,%d0				/* error code */
 	cmp.l	(disk_lba_o,%a1),%d2		/* check lba address */
-	jbcc	read_error
+	bcc.s	read_error
 
 	move.l	#4,%d0				/* error code */
 	cmp.l	#1,%d3
-	jbne	read_error			/* for now */
+	bne.s	read_error			/* for now */
 
-	jbsr	ide_wait_not_busy	/* make sure drive is ready */
-	jbne	read_error			/* %D0 == -1 */
+	bsr	ide_wait_not_busy	/* make sure drive is ready */
+	bne.s	read_error			/* %D0 == -1 */
 
-	jbsr	wr_lba			/* select device */
+	bsr	wr_lba			/* select device */
 
 	move.b	#ide_command,%d0
 	move.w	#ide_cmd_write,%d1
-	jbsr	ide_write
+	bsr	ide_write
 
-	jbsr	ide_wait_drq		/* wait until it's got the data */
-	jbne	error_return
+	bsr	ide_wait_drq		/* wait until it's got the data */
+	bne	error_return
 
-	jbsr	write_data		/* put the data */
+	bsr	write_data		/* put the data */
 
-	jbra	get_error_status
+	bra	get_error_status
 
 
 RECAL	=  1
@@ -257,76 +256,72 @@ RECAL	=  1
 ppide_reset:
 	move.l	#0,%a0			/* accumulate D1 mask here */
 
-	nop
-	nop
 	move.b	#rd_ide_8255,portCTRL_o(%a5)	/* bsr set_ppi_rd */
-##	jbsr	set_ppi_rd		/* setup for a read cycle */
+##	bsr.s	set_ppi_rd		/* setup for a read cycle */
 
 	nop
 	nop
 	move.b	#ide_rst_line,portC_o(%a5)	/* assert the RST line on the interface */
 
 	move.l	#50000,%d0		/* half a second */
-	jsr	usec_delay		/* wait 50ms */
+	jsr	usec_delay		/* wait 500ms */
 
-	nop
-	nop
 	clr.b	portC_o(%a5)
 
 	move.l	#200000,%d0		/* half a second */
-	jsr	usec_delay		/* wait 200ms */
+	jsr	usec_delay		/* wait 500ms */
 
 	move.b	#ide_status,%d0
-	jbsr	ide_read		/* read status of drive 0 */
+	bsr	ide_read		/* read status of drive 0 */
 	cmp.b	#0x50,%d1		/* check exact status bits */
-	jbne	reset1
+	bne.s	reset1
 
 .if RECAL
 	btst	#4,(disk_slave_o,%a1)		/* test SLAVE bit */
-	jbne	reset10				/* branch if SLAVE */
+	bne.s	reset10				/* branch if SLAVE */
 	move.b	#ide_command,%d0	/* do a recalibrate of drive 0 */
 	move.b	#ide_cmd_recal,%d1	/* do a recalibrate of the drive */
-	jbsr	ide_write
+	bsr	ide_write
 	
-	jbsr	ide_wait_not_busy
-	jbne	reset1
+	bsr	ide_wait_not_busy
+	bne.s	reset1
 reset10:
 .endif
 	add.l	#1,%a0				/* mark drive 0 present */
 reset1:
        	move.b	#0b11110000,%d1
 	move.b	#ide_head,%d0		/* select drive 1 */
-	jbsr	ide_write
+	bsr	ide_write
 
 	move.l	#1000,%d0			/* delay 10 ms = 10,000 usec */
 	jsr	usec_delay
 
 	move.b	#ide_status,%d0
-	jbsr	ide_read		/* read status of drive 0 */
+	bsr	ide_read		/* read status of drive 0 */
 	cmp.b	#0x50,%d1		/* check exact status bits */
-	jbne	reset2
+	bne.s	reset2
 .if RECAL
 	btst	#4,(disk_slave_o,%a1)		/* test SLAVE bit */
-	jbeq	reset20				/* branch if SLAVE */
+	beq.s	reset20				/* branch if SLAVE */
 	move.b	#ide_command,%d0	/* do a recalibrate of drive 0 */
 	move.b	#ide_cmd_recal,%d1	/* do a recalibrate of the drive */
-	jbsr	ide_write
+	bsr	ide_write
 	
-	jbsr	ide_wait_not_busy
-	jbne	reset2
+	bsr	ide_wait_not_busy
+	bne.s	reset2
 reset20:
 .endif
 	add.l	#2,%a0				/* mark drive 0 present */
 reset2:
        	move.b	#0b11100000,%d1
 	move.b	#ide_head,%d0		/* select drive 0 */
-	jbsr	ide_write
+	bsr	ide_write
 
 	move.l	%a0,%d1				/* move to D1 */
 	move.l	%d1,arg1(%sp)			/* save in stack */
 	clr.l	%d0
 	tst.b	%d1
-	jbne	reset3
+	bne.s	reset3
 	move.l	#1,%d0				/* error return */
 reset3:
 	rts
@@ -358,11 +353,11 @@ reset3:
 .if 0
 get_err:
 	move.b	#ide_err,%d0
-	jbsr	ide_read
+	bsr	ide_read
 
 	clr.l	%d0
 	or.b	%d1,%d0
-	jbne	gerr2
+	bne.s	gerr2
 	sub.b	#1,%d0
 gerr2:
 	rts
@@ -383,13 +378,13 @@ ide_wait_not_busy:
 	move.l	#-1,%d4
 wnb1:
 	move.b	#ide_status,%d0
-	jbsr	ide_read
+	bsr	ide_read
 
 	move.b	%d1,%d0
 	eor.b	#0x40,%d0		/* want busy==0, rdy==1 */
 	and.b	#0xC0,%d0		/* mask off Busy(7) & Drdy(6) */
 	dbeq.w	%d4,wnb1		/* loop */
-	jbne	wnb2
+	bne.s	wnb2
 
 	clr.l	%d0			/* zero extend D0, set EQ (Z-bit) */
 wnb2:
@@ -415,13 +410,13 @@ ide_wait_drq:
 	move.l	#-1,%d4
 wdrq1:
 	move.b	#ide_status,%d0
-	jbsr	ide_read
+	bsr	ide_read
 
 	move.b	%d1,%d0
 	eor.b	#0x08,%d0		/* want busy==0, drq==1 */
 	and.b	#0x88,%d0		/* mask off Busy(7) and DRQ(3) */
 	dbeq.w	%d4,wdrq1
-	jbne	wdrq2
+	bne.s	wdrq2
 
 	clr.l	%d0			/* zero extend D0 */
 wdrq2:
@@ -460,7 +455,7 @@ read_data:
 	move.b	#ide_data,%d0
 	move.w	#256-1,%d2		/* read 512 bytes */
 rdblk2: 
-	jbsr	ide_read
+	bsr.s	ide_read
 	ror.w	#8,%d1			/* swap bytes */
 	move.w	%d1,(%a0)+
 	dbra.w	%d2,rdblk2
@@ -484,7 +479,7 @@ verify_data:
 	move.b	#ide_data,%d0
 	move.w	#256-1,%d2
 verblk2: 
-	jbsr	ide_read
+	bsr.s	ide_read
 	dbra.w	%d2,verblk2
 
 	rts
@@ -509,7 +504,7 @@ write_data:
 wrblk2: 
 	move.w	(%a0)+,%d1
 	ror.w	#8,%d1
-	jbsr	ide_write
+	bsr.s	ide_write
 	dbra.w	%d2,wrblk2
 
 	move.l	(%sp)+,%d2		/* restore D2 */
@@ -539,24 +534,24 @@ wr_lba:
 	or.b	#0xE0,%d1		/* select LBA mode */
 	
 	move.b	#ide_head,%d0		/* write to head register */
-	jbsr	ide_write
+	bsr.s	ide_write
 
 	rol.l	#8,%d1
 	sub.l	#1,%d0			/* cyl msb reg */
-	jbsr	ide_write
+	bsr.s	ide_write
 
 	rol.l	#8,%d1
 	sub.l	#1,%d0			/* cyl lsb reg */
-	jbsr	ide_write
+	bsr.s	ide_write
 
 	rol.l	#8,%d1
 	sub.l	#1,%d0			/* sector reg */
-	jbsr	ide_write
+	bsr.s	ide_write
 
 	move.b	%d3,%d1			/* sector count from D3 */
 	and.b	#0x7f,%d1		/* for safety */
 	sub.l	#1,%d0			/* sector count reg */
-	jbsr	ide_write
+	bsr.s	ide_write
 
 	rts
 #	
@@ -577,34 +572,21 @@ wr_lba:
 #
 #
 ide_read:
-	nop
-	nop
 	move.b	#rd_ide_8255,portCTRL_o(%a5)	/* bsr set_ppi_rd */
-##	jbsr	set_ppi_rd		/* setup for a read cycle */
+##	bsr.s	set_ppi_rd		/* setup for a read cycle */
 
-	nop
-	nop
 	move.b	%d0,portC_o(%a5)	/* drive address onto control lines */
 	or.b	#ide_rd_line,%d0	/* assert RD pin */
-	nop
-	nop
 	move.b	%d0,portC_o(%a5)
 
-	nop
-	nop
 	move.b	portB_o(%a5),%d1		/* read MSB */
 	lsl.w	#8,%d1			/* make room for LSB */
-	nop
-	nop
 	move.b	portA_o(%a5),%d1
 
 	eor.b	#ide_rd_line,%d0	/* clear RD signal */
-	nop
-	nop
 	move.b	%d0,portC_o(%a5)
 
-	nop
-	nop
+#	move.b	#0,portC_o(%a5)		/* clear all control lines */
 	clr.b	portC_o(%a5)		/* release bus signals */
 
 	rts
@@ -623,34 +605,21 @@ ide_read:
 #
 		.even
 ide_write:
-	nop
-	nop
 	move.b	#wr_ide_8255,portCTRL_o(%a5)	/* bsr	set_ppi_wr  */
 
-	nop
-	nop
 	move.b	%d1,portA_o(%a5)	/* output LSB */
 	ror.w	#8,%d1
-	nop
-	nop
 	move.b	%d1,portB_o(%a5)	/* output MSB */
 	ror.w	#8,%d1
 
-	nop
-	nop
 	move.b	%d0,portC_o(%a5)		/* output the address */
 	or.b	#ide_wr_line,%d0	/* assert the WR line */
-	nop
-	nop
 	move.b	%d0,portC_o(%a5)
 
 	eor.b	#ide_wr_line,%d0	/* clear the WR line */
-	nop
-	nop
 	move.b	%d0,portC_o(%a5)
 
-	nop
-	nop
+#	move.b	#0,portC_o(%a5)		/* release bus signals */
 	clr.b	portC_o(%a5)		/* release bus signals */
 	rts
 
@@ -662,15 +631,11 @@ ide_write:
 
 		.even
 set_ppi_rd:
-	nop
-	nop
 	move.b	#rd_ide_8255,portCTRL_o(%a5)
 	rts
 
 		.even
 set_ppi_wr:
-	nop
-	nop
 	move.b	#wr_ide_8255,portCTRL_o(%a5)
 	rts
 .endif

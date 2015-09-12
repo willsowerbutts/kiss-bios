@@ -34,6 +34,8 @@
 #include "version.h"
 #include "cout.h"
 
+void *memset(void *s, int c, size_t n);
+void pretty_dump_memory(void *start, int len);
 int sio_get(void);
 int _con_out(char);
 void _run_us_mode(word mode, void *pc);
@@ -80,7 +82,8 @@ const char msg_welcome[] =
 ;
 
 char *cp;
-byte buffer[512];
+#define BUFFER_SIZE 512
+byte buffer[BUFFER_SIZE];
 dword sec_in_buf;
 int diskno;
 T_nv_struct nvram;
@@ -91,7 +94,6 @@ byte slave;
 #define WAIT do ch = sio_get(); while (ch<0)
 #define MAGIC_COFF 0x0150
 #define LOADPOINT 0x1000
-
 
 extern int32 timer_ticks;
 void prbuf(dword addr, byte *buf, int n);
@@ -123,28 +125,15 @@ int _IDE_READ_ID(byte *b, byte slave)
 {
 	struct REGS reg;
 
-#define FOR 0
-#if FOR
-	word i;
-	for (i=0; i<4; i++) {
-#endif
-		reg.D0 = 11;		/* info call */
-		reg.A0 = b;			/* buffer address */
-		reg.D1 = diskno;			/* disk # 2 */
+    reg.D0 = 11;		/* info call */
+    reg.A0 = b;			/* buffer address */
+    reg.D1 = diskno;	/* disk # 2 */
 
-		bios_call( &reg, &reg );
-#if FOR
-		if (reg.V) {
-			reg.D0 = 10;	/* reset */
-			reg.D1 = diskno;
-			bios_call(&reg, &reg);
-		}
-	}
-#endif
-#undef FOR
+    bios_call( &reg, &reg );
 
 	return reg.D0;
 }
+
 int _IDE_READ_SECTOR(byte *buffer, long lba_sector, byte slave)
 {
 	struct REGS reg;
@@ -161,7 +150,7 @@ int _IDE_READ_SECTOR(byte *buffer, long lba_sector, byte slave)
 
 	return reg.D0;
 }
-#if !RETAIL
+
 int _IDE_WRITE_SECTOR(byte *buffer, long lba_sector, byte slave)
 {
 	struct REGS reg;
@@ -178,36 +167,6 @@ int _IDE_WRITE_SECTOR(byte *buffer, long lba_sector, byte slave)
 
 	return reg.D0;
 }
-
-void exerciser(int iter, long sector)
-{
-	int16 i;
-	int plus = 17;
-	byte k;
-
-	while (iter--) {
-		k = iter+1;
-		for (i=0; i<nelem(buffer); i++) {
-			buffer[i] = k;
-			k += plus;
-		}
-		_IDE_WRITE_SECTOR(buffer, sector, slave);
-
-		for (i=0; i<nelem(buffer); i++) buffer[i] = 0xFF;
-		_IDE_READ_SECTOR(buffer, sector, slave);
-
-		k = iter+1;
-		for (i=0; i<nelem(buffer); i++) {
-			if (buffer[i] != k) {
-				cprintf("buf[%hd]	%02x %02x\n", i, (int)k, (int)buffer[i]);
-			}
-			k += plus;
-		}
-		cprintf("End iteration %d\n", iter+1);
-	}
-	cprintf("End R/W exerciser\n\n");
-}
-#endif
 
 char *dosname(char *dos, char *str)
 {
@@ -587,8 +546,7 @@ int main68(void)
 #if !RETAIL
 	int ch;
 #endif
-	int i, j, iter;
-	dword sect;
+	int i, j;
 	dword dtemp;
 	char name[16];
 	word mode;
@@ -599,19 +557,19 @@ int main68(void)
 	struct DIRENT *dir;
 	struct BOOT_BLK *bblkp;
 
-	debug = 0;
+	debug = 1;
 	slave = MASTER;
-	iter = 23;
-	sect = 4;
 	diskno = nvram.boot_disk_1;
 
 	for (i=0; i<512; i++) buffer[i] = i;
+
+    // pretty_dump_memory(0, 4096);
 
 #if !RETAIL
 	if (debug>=1) cprintf("Read CF ID\n");
 #endif
 	if ((i=_IDE_READ_ID(buffer, slave))) {
-		cprintf("Read ID error on device %c:\n", diskno+'A');
+		cprintf("Read ID error %d on device %c:\n", i, diskno+'A');
 #if RETAIL
 		if (nvram.boot_disk_2 == diskno)  run_rom_cpm();
 #endif
@@ -789,20 +747,8 @@ int main68(void)
 
 	bpbp = (void*)buffer;
 	unpack(FMT_BPB, buffer+11, bpbp);
-#if !RETAIL
-	if (debug>=3)
-	prbuf(0, (byte*)bpbp, sizeof(*bpbp));
-	if (debug>=2) {
-		show_bpb(bpbp);
-		WAIT;
-	}
-	if (debug>=1)
-		exerciser(iter, sect);
-	else
-#endif
-	cprintf("\n");
 
-	cprintf("Use 'H' for help\n");
+	cprintf("\nUse 'H' for help\n");
 	wr_dir();
 	cprintf("\n");
 	help();
@@ -813,7 +759,7 @@ int main68(void)
 
 		do {
 			cprintf("%s boot> ", exemode[!!mode]);
-			i = GETLINE((char*)buffer);
+            i = getline((char*)buffer, BUFFER_SIZE);
 			if (i==1) {
 				switch(*buffer) {
 #if P_TUTOR

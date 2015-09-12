@@ -14,7 +14,7 @@ BIOSSIZE=48
 #
 #
 CC = $(CROSS)-gcc
-COPT = -O2 -m$(CPU) -Wall -D$(RETAIL)
+COPT = -O2 -m$(CPU) -Wall -Werror -D$(RETAIL)
 # -Wa,-alhms,-L
 AS = $(CROSS)-as
 AOPT = -m$(CPU) -alhms --defsym $(RETAIL) --defsym M68000=$(CPU)
