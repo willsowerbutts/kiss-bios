@@ -24,8 +24,7 @@
 #include "mytypes.h"
 #include "portab.h"
 
-#define nelem(x)	(sizeof(x)/sizeof(*x))
-// #define toupper(x) ((x)>='a'&&(x)<='z'?(x)+('A'-'a'):(x))
+#define nelem(x)	(sizeof(x)/sizeof((x)[0]))
 #define GETLINE(buf) getline(buf,nelem(buf))
 #define GETUCLINE(buf) uc_string(buf,getline(buf,nelem(buf)))
 
@@ -50,6 +49,7 @@ struct NVRAM {
 extern long h_m_a;
 extern char debug;
 
+void exit(int status);
 int cprintf(char const *fmt, ...);
 int uc_string(char *str, int length);
 int getline(char *line, int linesize);

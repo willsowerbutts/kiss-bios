@@ -21,6 +21,8 @@
 **********************************************************************/
 #include <stdlib.h>
 
+void *memset(void *s, int c, size_t n);
+
 void * mem_chain;		/* points at next block to allocate */
 
 void *malloc(size_t size)

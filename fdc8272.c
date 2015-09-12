@@ -140,7 +140,7 @@ byte fdc_ready_for_result(void)
 byte output_byte_to_fdc(byte data_byte)
 {
 	/* check to see if FDC is ready for command */
-	if (not fdc_ready_for_command)
+	if (not fdc_ready_for_command())
 		propagate_error;
 
 	output(fdc_data_port, data_byte);
@@ -177,9 +177,9 @@ byte input_byte_from_fdc(byte *data_byte_ptr)
 
 void output_controls_to_dma(T_docb *docb_ptr)
 {
-	static byte dma_mode;	/* 2 = read, 3 = write */
-	static address dma_addr;
-	static word dma_count;
+	static byte dma_mode __attribute__((__unused__));	/* 2 = read, 3 = write */
+	static address dma_addr __attribute__((__unused__));
+	static word dma_count __attribute__((__unused__));
 #define docb (*docb_ptr)
 	if (docb.dma_op < 3) {
 	/* set DMA mode IN / OUT */
@@ -435,7 +435,7 @@ void fdcint(void)		/* called at interrupt level */
 		}	/* while */
 	}	/* else  not fdc_busy */
 ignore:	/* end_of_interrupt */
-
+    return; /* gcc 4.9 raises error without this, due to preceeding label */
 #undef docb
 }
 

@@ -391,7 +391,7 @@ inf8(VOID)
 /************************************************************************/
 {
     REG WORD i;				/* temp for 8-bit displacement	*/
-    REG BYTE *p;
+    char *p;
  
 
     i = (BYTE)instr;
@@ -517,7 +517,7 @@ inf12(VOID)
 /*									*/
 /************************************************************************/
 {
-    REG BYTE *p;
+    char *p;
  
 
     					/* Get and print out the Data	*/

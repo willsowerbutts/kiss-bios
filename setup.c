@@ -533,10 +533,10 @@ int set_serial (void)
 	bitrate = (counter_clock/16)/div;
 	while (1) {
 		cprintf ("Serial port baud rate (Kbit/sec) [%d]: ", bitrate);
-		GETLINE(line);
+		GETLINE((char*)line);
 		if (line[0] == '\0') break;
 
-		rate = atoi(line);
+		rate = atoi((char*)line);
 		for (i = 0; i < nelem(rates); i++) {
 			if (rate == rates[i]) break;
 		}
@@ -755,7 +755,7 @@ void *probe_IDE_disk(T_disk *proto, char *name)
 			i = 0;
 		}
 	}
-	strncpy(name, buffer.ModelNumber, 40);
+	strncpy(name, (char*)buffer.ModelNumber, 40);
 	name[40] = 0;
 
 	return new;

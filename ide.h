@@ -23,7 +23,7 @@
 #define __IDE_H
 #include "mytypes.h"
 
-#pragma pack 1
+#pragma pack(1)
 #ifndef MASTER
 #define MASTER	0
 #define SLAVE	16

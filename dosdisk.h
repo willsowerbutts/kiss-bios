@@ -28,7 +28,7 @@
 
 
 /* this is the actual DOS definition, assuming packing to 1 */
-#pragma pack 1
+#pragma pack(1)
 typedef struct BPB {
     word	bps;	/* bytes per sector = 0x200 */
     byte	spc;	/* sectors per cluster, often 2 */

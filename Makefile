@@ -4,21 +4,25 @@
 #	Uses AshWare distro of GCC 2.91
 #
 #
+MCPU=68030
+CROSS = m68k-elf
+CROSSLIB = /usr/local/stow/m68k/lib/gcc/m68k-elf/4.9.2/
+#
 RETAIL=RETAIL=0
 CPU=$(MCPU)
 BIOSSIZE=48
 #
 #
-CC = m68k-coff-gcc
+CC = $(CROSS)-gcc
 COPT = -O2 -m$(CPU) -Wall -D$(RETAIL)
 # -Wa,-alhms,-L
-AS = m68k-coff-as
+AS = $(CROSS)-as
 AOPT = -m$(CPU) -alhms --defsym $(RETAIL) --defsym M68000=$(CPU)
-LD = m68k-coff-ld
+LD = $(CROSS)-ld
 LOPT = -Ttext 0xFFF00000 -Tdata 0x400
 UOPT = -Ttext 0x1100 --entry begin
-LIB = m68k-coff-ar
-LIBS = -L../lib -lc -lgcc
+LIB = $(CROSS)-ar
+LIBS = -L$(CROSSLIB) -lc -lgcc
 
 TARGET = kiss01
 TUTOR = ../yoda/tutor13b.s68
@@ -43,7 +47,7 @@ HSFILES = portab.h optab.h disasm.h
 OFILES = main68.o serial.o rtc.o ds1302.o cprintf.o packer.o \
 	pic202.o ns202.o ppide.o dualide.o bios8.o strtoul.o malloc.o \
 	dualsd.o crctab.o bioscall.o fdc8272.o wd37c65.o floppy.o setup.o \
-	debug.o beetle.o disasm.o mem4mem.o
+	debug.o beetle.o disasm.o mem4mem.o prettydump.o
 CSFILES = main68.s cprintf.s packer.s ns202.s crc32.s malloc.s setup.s \
 	rtc.s strtoul.s fdc8272.s wd37c65.s ppide2.s debug.s disasm.s
 
@@ -55,8 +59,8 @@ TTABLES = test1.sym test1.mod daytime.sym daytime.mod
 LIBFILES = cprintf.o strtoul.o bioscall.o crt0.o
 
 
-test:	test4.bin test3.bin test2.bin test1.bin #daytime.bin $(TTABLES)
 all:	test $(TARGET).hex $(TARGET).bin $(TABLES)
+test:	test4.bin test3.bin test2.bin test1.bin #daytime.bin $(TTABLES)
 alles:	all test
 cfd:	cfdisk.out
 
@@ -139,7 +143,7 @@ startup.out:	startup.o bios.a
 $(TARGET).hex:	startup.out
 	bin2hex -s 0x2000 -o $(TARGET).hex startup.out
 
-$(TARGET).bin:	$(TARGET).hex $(TUTOR)
+$(TARGET).bin:	$(TARGET).hex
 	hex2bin -R $(BIOSSIZE)k $(TARGET).hex $(INC) -o $(TARGET).bin
 
 mylib.a:   $(LIBFILES)

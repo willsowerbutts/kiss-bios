@@ -3,7 +3,7 @@ struct optbl {
     WORD inmsk;
     WORD invalu;
     WORD infmt;
-    BYTE *innam;
+    char *innam;
 };
  
 #define MAXFMT  28

@@ -32,7 +32,7 @@
 #include "debug.h"
 #endif
 #include "version.h"
-
+#include "cout.h"
 
 int sio_get(void);
 int _con_out(char);
@@ -41,6 +41,7 @@ void _run_us_mode(word mode, void *pc);
 int _IDE_WRITE_SECTOR(byte *buffer, long lba_sector, byte slave);
 #endif
 
+extern byte location_zero;
 const char msg_welcome[] =
 		"\r\n\r\n"
 #if M68000==68030
@@ -560,12 +561,10 @@ int getline(char *line, int linesize)
 
 long run_rom_cpm(void)
 {
-#include "cout.h"
-extern byte location_zero;
 	long i;
 
 	byte *addr = &location_zero  +  BIOSSIZE * 1024L;
-	if ((i=!strncmp("CPM     SYS", addr+1, 11)) &&
+	if ((i=!strncmp("CPM     SYS", (char*)addr+1, 11)) &&
 					*(word*)(addr+2048) == MAGIC) {
 		i = ((struct hdr*)(addr+2048))->ch_entry;
 		memmove( (byte*)i, (byte*)(addr+2048+sizeof(struct hdr)), 64*1024);
@@ -814,7 +813,7 @@ int main68(void)
 
 		do {
 			cprintf("%s boot> ", exemode[!!mode]);
-			i = GETLINE(buffer);
+			i = GETLINE((char*)buffer);
 			if (i==1) {
 				switch(*buffer) {
 #if P_TUTOR

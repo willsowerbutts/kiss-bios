@@ -79,6 +79,6 @@
 /**/
 /**** above are included from  DDT/STDIO.H ***********/
 #else		// !ALCYON
-#include <ctype.h>
+#include "ctype.h"
 #endif	// ALCYON
 #endif  // _PORTAB_H

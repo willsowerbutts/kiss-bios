@@ -198,6 +198,7 @@ nout2:
 	rts
 
 
+    .globl _start
 _start:
      	or.w	#0x2700,%sr	/* disable interrupts */
 

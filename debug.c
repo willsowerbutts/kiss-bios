@@ -21,6 +21,7 @@
 **********************************************************************/
 #include <stdlib.h>
 #include <string.h>
+#include "ctype.h"
 #include "mytypes.h"
 #include "main68.h"
 #include "debug.h"
@@ -438,17 +439,17 @@ void dump_memory(int format, uint32 start, int count)
 			switch (format) {
 				case 1:
 					m = 8;
-					(word)k = *(byte*)p++;
+					k = *(byte*)p++;
 					break;
 				case 2:
 					m = 4;
-					(word)k = *((word*)p)++;
+					k = *((word*)p++);
 					break;
 				case 3:
-					(byte)k = *p++;
+					k = *p++;
 					break;
 				case 4:
-					k = *((long*)p)++;
+					k = *((long*)p++);
 					break;
 			} /* switch */
 			cprintf(fmt[format-1], k);
@@ -586,7 +587,7 @@ void debug68(int option)
 						}
 						if (n == xSP) n = 15 + !(state.sr & 0x2000);
 						cprintf(n==18 ? "%04lx : " : n<15 ? "%08lx : " : "%06lx : ",
-									state.d[n]);
+                                ((long*)&state)[n]); /* state.d[n]) but n may exceed bounds of d */
 						v = GETLINE(line);
 						if (v) {
 							v = strtoul(line, NULL, radix);

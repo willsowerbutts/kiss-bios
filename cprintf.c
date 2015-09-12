@@ -29,9 +29,8 @@ int _con_out(char);
 # define NULL ((void*)0L)
 #endif
 
-#define __fastcall
 #define NUMLTH 11
-static unsigned char * __fastcall __numout(long i, int base, unsigned char out[]);
+static unsigned char * __numout(long i, int base, unsigned char out[]);
 
 void putch(char c)
 {
@@ -107,15 +106,15 @@ int cprintf(const char * fmt, ...)
 	    case 'd': base=-10; }
 	       switch(type)
 	       {
-		  case 0: val=va_arg(ap, short); break; 
+		  case 0: val=va_arg(ap, int);   break;  /* short is promoted to int by ... */
 		  case 1: val=va_arg(ap, int);   break;
 		  case 2: val=va_arg(ap, long);  break;
-		  case 4: val=va_arg(ap, unsigned short); break; 
+		  case 4: val=va_arg(ap, unsigned int);   break;   /* short is promoted to int by ... */
 		  case 5: val=va_arg(ap, unsigned int);   break;
 		  case 6: val=va_arg(ap, unsigned long);  break;
 		  default:val=0; break;
 	       }
-	       cp = __numout(val,base,out);
+	       cp = (char*)__numout(val,base,out);
 	       if(0) {
 	    case 's':
 	          cp=va_arg(ap, char *);
@@ -154,9 +153,7 @@ const char nstring[]="0123456789ABCDEF";
 
 #if ASM_CVT==0
 
-static unsigned char *
-__fastcall
-__numout(long i, int base, unsigned char out[])
+static unsigned char *__numout(long i, int base, unsigned char out[])
 {
    int n;
    int flg = 0;
