@@ -64,7 +64,7 @@ location_zero:
 	.long	0xFFFE7FF0		/* Reset:  initial SSP */
 	.long	_start			/* Reset:  initial PC  */
 
-
+    .globl _start
 _start:
 	move.b	#0x81,(lites).w		/* display in the lights */
 
