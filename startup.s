@@ -202,6 +202,30 @@ nout2:
 _start:
      	or.w	#0x2700,%sr	/* disable interrupts */
 
+.if KISS
+        /* KISS-68030 DRAM startup */
+
+        move.w  #8-1,%d2                /* outer counter */
+DRAM_start00:
+        lea     (0,%pc),%a3
+DRAM_start:
+        move.l  (%a3)+,%d0
+        jbmi    DRAM_started
+
+        move    %d0,%a0                 /* use A0 */
+        move.w  #4096,%d1               /* count 4K addresses  */
+DRAM_s0:
+        move.l  (%a0)+,%d0              /* D0 is scratch */
+        dbra    %d1,DRAM_s0             /* just do 4K read refreshes */
+
+        lea     8(%a3),%a3              /* bump to next address */
+        jbra    DRAM_start
+DRAM_started:
+        dbra    %d2,DRAM_start00        /* loop back 8 times */
+
+.endif
+
+
 # set  mode0, portA=input, portB=output, portC=input
 ###	move.b	#0x99,portCTRL
 
