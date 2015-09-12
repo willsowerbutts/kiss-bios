@@ -167,4 +167,3 @@ dword get_rtc_date(T_date *today)
 	return today->julian;
 }
 
-

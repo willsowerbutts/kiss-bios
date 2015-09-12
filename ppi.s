@@ -38,4 +38,3 @@ portC		=	mf_ppi + portC_o
 portCTRL	=	mf_ppi + portCTRL_o
 
 .endif
-

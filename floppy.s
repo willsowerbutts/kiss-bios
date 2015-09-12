@@ -362,4 +362,3 @@ floppy_format:
 	move.l	#-1,%d0		/* error return */
 	rts
 
-

@@ -136,4 +136,3 @@ void ns202_init2(void)
 
 }
 
-

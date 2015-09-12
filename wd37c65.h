@@ -28,4 +28,3 @@ byte wd_set_ldor(byte bits);
 byte wd_clear_ldor(byte bits);
 
 void wd_select(T_floppy *floppy);
-

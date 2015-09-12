@@ -281,4 +281,3 @@ struct optbl optab[] = {
     { 0x0000, 0x0000, 0,      "*unknown instruction*" }
 };
 
-

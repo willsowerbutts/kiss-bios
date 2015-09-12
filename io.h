@@ -43,4 +43,3 @@ void	outp(T_port port, byte data);
 #endif
 
 #endif /* __IO_H */
-

@@ -298,4 +298,3 @@ typedef struct _IDENTIFY_DEVICE_DATA {
 
 #endif  // __IDE_H
 
-

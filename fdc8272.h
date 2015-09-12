@@ -184,4 +184,3 @@ extern const T_param *fdc_parameters[];
 
 
 #endif	/* _FDC8272_H */
-

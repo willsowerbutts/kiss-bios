@@ -47,4 +47,3 @@ struct AOUT_HEAD {
 } T_aout_head;
 
 #endif	// _COFF_H
-

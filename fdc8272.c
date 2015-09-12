@@ -575,4 +575,3 @@ int fdc_info(dword lba, dword geom, byte disk_no)
 
 
 
-

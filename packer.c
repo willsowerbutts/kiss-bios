@@ -72,4 +72,3 @@ dword _uval(byte *p, byte size)
 	}
 	return value;
 }
-

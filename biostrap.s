@@ -77,4 +77,3 @@ day_time	=	20	/* D1 = return option */
 
 # biostrap.s -- end of file
 
-

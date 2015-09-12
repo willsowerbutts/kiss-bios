@@ -82,4 +82,3 @@
 #include <ctype.h>
 #endif	// ALCYON
 #endif  // _PORTAB_H
-

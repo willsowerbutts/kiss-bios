@@ -52,4 +52,3 @@ dword get_rtc_time (T_time *tod);
 dword get_rtc_date(T_date *today);
 
 /* time.h */
-

@@ -37,4 +37,3 @@ struct REGS {
 int bios_call ( struct REGS *in, struct REGS *out );
 
 /* bioscall.h */
-

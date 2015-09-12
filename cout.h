@@ -14,4 +14,3 @@ struct hdr {
 #define MAGIC   0x601a  /* bra .+26 instruction*/
 
 /* end cout.h */
-

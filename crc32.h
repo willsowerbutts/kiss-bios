@@ -11,4 +11,3 @@
 uint32 crc32 (byte *cp, int nsize, uint32 polynomial);
 
 /* crc32.h */
-

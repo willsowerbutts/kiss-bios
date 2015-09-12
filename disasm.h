@@ -124,4 +124,3 @@ VOID primm(WORD asize);
 VOID prtop(WORD adrtype, WORD asize);
 
 #endif // _DISASM_H
-

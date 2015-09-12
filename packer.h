@@ -33,4 +33,3 @@ dword _uval(byte *p, byte size);
 #define cvget(bp) _uval((bp), sizeof(bp))
 
 #endif  /* _PACKER_H */
-
