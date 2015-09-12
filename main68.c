@@ -125,11 +125,60 @@ int getline(char *line, int linesize)
 
 FATFS fat_fs;
 
-int main68(void)
+void do_ls(const char *path)
 {
     FRESULT fr;
     DIR fat_dir;
     FILINFO fat_file;
+
+    fr = f_opendir(&fat_dir, path);
+    if(fr != FR_OK){
+        cprintf("Failed f_opendir(\"%s\"): 0x%x\n", path, fr);
+        return;
+    }
+
+    while(1){
+        fr = f_readdir(&fat_dir, &fat_file);
+        if(fr != FR_OK){
+            cprintf("Failed f_readdir(): 0x%x\n", fr);
+            break;
+        }
+        if(fat_file.fname[0] == 0) /* end of directory? */
+            break;
+
+        if(fat_file.fattrib & AM_DIR){
+            /* directory */
+            cprintf("[dir]       %04d-%02d-%02d %02d:%02d:%02d  %s/\n", 
+                    1980 + ((fat_file.fdate >> 9) & 0x7F),
+                    (fat_file.fdate >> 5) & 0xF,
+                    fat_file.fdate & 0x1F,
+                    fat_file.ftime >> 11,
+                    (fat_file.ftime >> 5) & 0x3F,
+                    (fat_file.ftime & 0x1F) << 1,
+                    fat_file.fname);
+        }else{
+            /* regular file */
+            cprintf("%10d  %04d-%02d-%02d %02d:%02d:%02d  %s\n", fat_file.fsize, 
+                    1980 + ((fat_file.fdate >> 9) & 0x7F),
+                    (fat_file.fdate >> 5) & 0xF,
+                    fat_file.fdate & 0x1F,
+                    fat_file.ftime >> 11,
+                    (fat_file.ftime >> 5) & 0x3F,
+                    (fat_file.ftime & 0x1F) << 1,
+                    fat_file.fname);
+        }
+    }
+
+    fr = f_closedir(&fat_dir);
+    if(fr != FR_OK){
+        cprintf("Failed f_closedir(): 0x%x\n", fr);
+        return;
+    }
+}
+
+int main68(void)
+{
+    FRESULT fr;
     cprintf("Hello, world!\n");
 
     fr = f_mount(&fat_fs, "0:", 1);
@@ -138,28 +187,7 @@ int main68(void)
         exit(fr);
     }
 
-    fr = f_opendir(&fat_dir, "0:/");
-    if(fr != FR_OK){
-        cprintf("Failed f_opendir(): 0x%x\n", fr);
-        exit(fr);
-    }
-
-    while(1){
-        fr = f_readdir(&fat_dir, &fat_file);
-        if(fr != FR_OK){
-            cprintf("Failed f_readdir(): 0x%x\n", fr);
-            exit(fr);
-        }
-        if(fat_file.fname[0] == 0) /* end of directory? */
-            break;
-        cprintf("[%s] size=%d %s\n", fat_file.fname, fat_file.fsize, fat_file.fattrib & AM_DIR ? "[directory]":"[file]");
-    }
-
-    fr = f_closedir(&fat_dir);
-    if(fr != FR_OK){
-        cprintf("Failed f_closedir(): 0x%x\n", fr);
-        exit(fr);
-    }
+    do_ls("");
 
     return 0;
 }
