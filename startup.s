@@ -190,6 +190,8 @@ nout2:
     move.l  (%sp)+,%d0  /* pop D0 */
     rts
 
+/* ------------------------------------------------------------------------ */
+
     .globl _start
 _start:     /* RESET ENTRY VECTOR */
     or.w    #0x2700,%sr /* disable interrupts */
@@ -219,9 +221,29 @@ DRAM_started:
     dbra    %d2,DRAM_start00        /* loop back 8 times */
 .endif
 
-    jbsr    mem4mem_init00      /* init 4mem boards */
+# 4-Mem board init
+    jbsr    mem4mem_init00
 
-# clear the C-program .bss area
+# Setup the Exception Vectors
+    lea location_zero(%pc),%a1
+    lea (0),%a2
+
+n_vectors   =   (vector_final - location_zero) / 4
+    move.w  #n_vectors-1,%d1
+set_vector:
+    move.l  (%a1)+,%d0
+    move.l  %d0,(%a2)+
+    dbra    %d1,set_vector
+
+# Setup 68030 CPU
+.if BOARD_KISS
+    clr.l   %d2                 /* set Vector Base Register */
+    movec.l %d2,%vbr
+    move.l  #BOARD_CACR0,%d2    /* enable data & instruction caches */
+    movec.l %d2,%cacr
+.endif
+
+# Setup for C language program: clear the .bss section
     lea.l   __bss_end,%a0
     move.l  %a0,%d2
     lea.l   __bss_start,%a1
@@ -234,7 +256,7 @@ zap_bss:
     dbra    %d0,zap_loop
     move.l  %d2,mem_chain /* heap (for malloc) starts immediately after .bss */
 
-# load the C-program .data area from ROM
+# Setup for C language program: copy .data from ROM to RAM
     lea.l   __data_end,%a0
     lea.l   __data_start,%a1    /* target in a1 */
     sub.l   %a1,%a0
@@ -246,73 +268,57 @@ copy_data_loop:
 copy_data:
     dbra    %d0,copy_data_loop
 
-    clr.b   debug       /* no comments */
+    clr.b   debug               /* disable debug output */
     jbsr    get_nvram
     jbsr    sio_init
     jbsr    crlf
 
-/*  Put out the initial Welcome Message */
+#  Print out the initial Welcome Message
     lea msg_welcome(%pc),%a0
     jbsr    put_string
 
-#### disabled this memory test for now -- note this leaves h_m_a uninitialised.
-####    lea msg_test1(%pc),%a0
-####    jbsr    put_string
-####
-####    lea.l   (maxaddr),%a0
-####    lea.l   (mem_ret,%pc),%a6
-####    jbra    memtest
-####mem_ret:
-####    move.l  %a5,h_m_a
-####    lea msg_test2(%pc),%a0
-####    jbsr    put_string
-####
-####    sub.l   #maxchip,%a4
-####
-####    move.l  %a4,%d0
-####    jbsr    adout
-####
-####    lea msg_to(%pc),%a0
-####    jbsr    put_string
-####    move.l  %a5,%d0
-####    jbsr    adout
-####    jbsr    crlf
+# Run the (mini-68K) memory test
+    lea msg_test1(%pc),%a0
+    jbsr    put_string
 
-/* Set up the Exception Vectors */
+    lea.l   (maxaddr),%a0
+    lea.l   (mem_ret,%pc),%a6
+    jbra    memtest
+mem_ret:
+    move.l  %a5,h_m_a
+    lea msg_test2(%pc),%a0
+    jbsr    put_string
 
-    lea location_zero(%pc),%a1
-    lea (0),%a2
+    sub.l   #maxchip,%a4
 
-n_vectors   =   (vector_final - location_zero) / 4
-    move.w  #n_vectors-1,%d1
-set_vector:
-    move.l  (%a1)+,%d0
-    move.l  %d0,(%a2)+
-    dbra    %d1,set_vector
+    move.l  %a4,%d0
+    jbsr    adout
 
-.if BOARD_KISS
-    clr.l   %d2     /* Vector Base Register */
-    movec.l %d2,%vbr
-    move.l  #BOARD_CACR0,%d2    /* enable data & instruction caches */
-    movec.l %d2,%cacr
-.endif
+    lea msg_to(%pc),%a0
+    jbsr    put_string
+    move.l  %a5,%d0
+    jbsr    adout
+    jbsr    crlf
 
-/* now initialize the NS32202 interrupt controller (PIC) */
+# Setup the NS32202 interrupt controller (PIC)
     .globl  ns202_init2
     jbsr    ns202_init2
-        and.w   #~0x0700,%sr    /* enable interrupts */
 
+# Enable interrupts
+    and.w   #~0x0700,%sr
+
+# Check for S keypress
     jbsr    sio_get
-    move.l  %d0,-(%sp)  /* push argument, possible an 's' */
+    move.l  %d0,-(%sp)          /* push argument, possible an 's' */
     .globl  setup
     jsr setup
-    add.l   #4,%sp      /* discard argument */
+    add.l   #4,%sp              /* discard argument */
 
     .globl  configure
-    jsr configure   /* go configure based on NVRAM */
+    jsr configure               /* go configure based on NVRAM */
     
     .globl  main68
-    jsr main68
+    jsr main68                  /* call main C language program */
 /* any return from MAIN comes here */
         .globl  _exit
 _exit:
@@ -626,7 +632,7 @@ regdump:
 ############################################################
 ############################################################
 
-# .include  "memtest0.s"      
+.include  "memtest0.s"      
 ############################################################
 
     .end
