@@ -19,20 +19,17 @@
     program.  If not, see <http://www.gnu.org/licenses/>.
 
 **********************************************************************/
-.include  "mfpic.s"		
-
+.include  "hardware.s"
+.include  "mfpic.s"
 .include  "ppi.s"
-
 .include  "biostrap.s"
-
-
 
 maxaddr		=	2*1024*1024
 maxchip		=	32*1024
 maxcount	=	maxaddr/maxchip
 chiplong	=	maxchip/4
 /* debugging lights and switches:				*/
-lites		=	0xFF + KISS68030_IO	/* output only */
+lites		=	0xFF + BOARD_BASE_IO	/* output only */
 switches	=	lites			/* input only */
 
 
@@ -48,8 +45,7 @@ switches	=	lites			/* input only */
 
 	.even
 location_zero:
-/*	.long	0x1000			/* Reset:  initial SSP */
-	.long	0x70000			/* Reset:  initial SSP */
+	.long	BOARD_INIT_SP	/* Reset:  initial SSP */
 	.long	_start			/* Reset:  initial PC  */
 vector_2:
 	.long	exception_2		/* Bus Error     *** */
@@ -202,7 +198,7 @@ nout2:
 _start:
      	or.w	#0x2700,%sr	/* disable interrupts */
 
-.if KISS
+.if BOARD_KISS
         /* KISS-68030 DRAM startup */
 
         move.w  #8-1,%d2                /* outer counter */
@@ -304,10 +300,11 @@ set_vector:
 	move.l	(%a1)+,%d0
 	move.l	%d0,(%a2)+
 	dbra	%d1,set_vector
-.if KISS
+
+.if BOARD_KISS
 	clr.l	%d2		/* Vector Base Register */
 	movec.l	%d2,%vbr
-	move.l	#CACR0,%d2	/* enable data & instruction caches */
+	move.l	#BOARD_CACR0,%d2	/* enable data & instruction caches */
 	movec.l	%d2,%cacr
 .endif
 
@@ -332,7 +329,7 @@ set_vector:
 _exit:
 	move.l	%d0,-(%sp)
 __exit:				/* return code is at top of stack */
-	pea	fmt9(%pc)
+	pea	halt_msg(%pc)
 	jbsr	cprintf
 	add.l	#8,%sp
 /* now STOP, we are all done here */
@@ -345,10 +342,9 @@ exit:	add.l	#4,%sp		/* remove return address */
 	jbra	__exit		/* leave return code on stack */
 
 
-fmt9:
+halt_msg:
 	.ascii	"\nExit code = 0x%02x\n"
-	.asciz	"BIOSystem shutdown.\n"
-
+	.asciz	"BIOS: machine halted.\n"
 
 	.even
 exception_2:

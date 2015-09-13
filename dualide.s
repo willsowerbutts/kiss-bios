@@ -24,13 +24,7 @@
 .include "allide.s"
 #-----------------------------------------------------------------------------
 
-
-
-
-
 Dual_IDE_port	=	0x80
-
-
 
 arg1	=	4
 arg2	=	arg1+4
@@ -40,7 +34,7 @@ arg4	=	arg3+4
 buffer	= 	arg2
 
 
-dual_ide_A	=	babyM68k_IO + Dual_IDE_port
+dual_ide_A	=	BOARD_BASE_IO + Dual_IDE_port
 dual_ide_B	=	dual_ide_A + 16
 
 /*
@@ -449,7 +443,7 @@ bd_ok2:
 bd_ok3:
 	move.l	%d1,%a0	
 
-	move.l	#babyM68k_IO,%d1
+	move.l	#BOARD_BASE_IO,%d1
 	or.b	(disk_port_o,%a1),%d1
 	move.l	%d1,%a5			/* port pointer in A5 */
 

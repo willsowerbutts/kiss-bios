@@ -1,7 +1,7 @@
 #  def4mem.s
 /*
-	Copyright (C) 2015 John R. Coffman.
-	Licensed for hobbyist use only.
+    Copyright (C) 2015 John R. Coffman.
+    Licensed for hobbyist use only.
 ***********************************************************************
 
     This program is free software: you can redistribute it and/or modify
@@ -20,17 +20,16 @@
 
 **********************************************************************/
 .ifndef _def4mem_s
-_def4mem_s 	=	1
-.include "mfpic.s"
+_def4mem_s  =   1
+
+.include "hardware.s"
 
 # Z80 port address of first 4MEM board
-dev_4mem_IO	=	0x00
-dev_4mem_inc	=	2
+dev_4mem_IO     =   0x00
+dev_4mem_inc    =   2
 
 # board base address:
-dev_4mem0	=	KISS68030_IO + dev_4mem_IO
-
-
+dev_4mem0   =   BOARD_BASE_IO + dev_4mem_IO
 
 .endif
 

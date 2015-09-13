@@ -20,6 +20,9 @@
 
 **********************************************************************/
 #
+
+.include "hardware.s"
+
 dev_uart	=	0x48	/* MF/PIC UART location */
 
 rbr		=	0	/* receive buffer register */
@@ -67,7 +70,7 @@ divisor		=	1843200/16 / 9600		/* divisor */
 _uart_find:
 #	reset				/* does no harm/good */
 
-	or.l	#KISS68030_IO,%d0		/* form word address */
+	or.l	#BOARD_BASE_IO,%d0		/* form word address */
 	move.l	%d0,%a5			/* reference regs from here */
 
 	clr.l	%d1			/* no uart found */

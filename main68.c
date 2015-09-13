@@ -19,6 +19,7 @@
     program.  If not, see <http://www.gnu.org/licenses/>.
 
 **********************************************************************/
+#include <stdbool.h>
 #include <string.h>
 #include "mytypes.h"
 #include "packer.h"
@@ -130,6 +131,8 @@ void do_ls(const char *path)
     FRESULT fr;
     DIR fat_dir;
     FILINFO fat_file;
+    bool left = true;
+    int i;
 
     fr = f_opendir(&fat_dir, path);
     if(fr != FR_OK){
@@ -148,7 +151,7 @@ void do_ls(const char *path)
 
         if(fat_file.fattrib & AM_DIR){
             /* directory */
-            cprintf("[dir]       %04d-%02d-%02d %02d:%02d:%02d  %s/\n", 
+            cprintf("          %04d-%02d-%02d %02d:%02d:%02d %s/", 
                     1980 + ((fat_file.fdate >> 9) & 0x7F),
                     (fat_file.fdate >> 5) & 0xF,
                     fat_file.fdate & 0x1F,
@@ -156,9 +159,11 @@ void do_ls(const char *path)
                     (fat_file.ftime >> 5) & 0x3F,
                     (fat_file.ftime & 0x1F) << 1,
                     fat_file.fname);
+            for(i=strlen(fat_file.fname); i<12; i++)
+                cprintf(" ");
         }else{
             /* regular file */
-            cprintf("%10d  %04d-%02d-%02d %02d:%02d:%02d  %s\n", fat_file.fsize, 
+            cprintf("%9d %04d-%02d-%02d %02d:%02d:%02d %-12s ", fat_file.fsize, 
                     1980 + ((fat_file.fdate >> 9) & 0x7F),
                     (fat_file.fdate >> 5) & 0xF,
                     fat_file.fdate & 0x1F,
@@ -167,7 +172,16 @@ void do_ls(const char *path)
                     (fat_file.ftime & 0x1F) << 1,
                     fat_file.fname);
         }
+
+        if(left)
+            cprintf(" ");
+        else
+            cprintf("\n");
+        left = !left;
     }
+
+    if(!left)
+        cprintf("\n");
 
     fr = f_closedir(&fat_dir);
     if(fr != FR_OK){
@@ -187,7 +201,10 @@ int main68(void)
         exit(fr);
     }
 
+    cprintf("\n");
     do_ls("");
+    cprintf("\n");
+    do_ls("0:/bios.src");
 
     return 0;
 }

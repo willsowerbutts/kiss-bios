@@ -19,7 +19,7 @@
     program.  If not, see <http://www.gnu.org/licenses/>.
 
 **********************************************************************/
-.include "mfpic.s"
+.include "hardware.s"
 #-----------------------------------------------------------------------------
 .include "allide.s"
 .include "error.s"
@@ -28,8 +28,6 @@
 USE_CRCs	=	1		/* CRC16's or not	*/
 
 Dual_SD_port	=	0x08		/* Z80 port $08		*/
-
-
 
 arg1	=	4
 arg2	=	arg1+4
@@ -40,7 +38,7 @@ buffer	= 	arg2
 
 SD_operation	=	0	/* kept in A5 */
 SD_select	=	1
-dual_SD_op	=	babyM68k_IO + Dual_SD_port	/* Operation Reg */
+dual_SD_op	=	BOARD_BASE_IO + Dual_SD_port	/* Operation Reg */
 dual_SD_sel	=	dual_ide_A + SD_select		/* Selection Reg */
 
 

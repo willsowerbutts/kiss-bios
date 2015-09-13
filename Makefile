@@ -1,10 +1,20 @@
-#
-#  Makefile for KISS-68030 test code(s)
-#
-#	Uses AshWare distro of GCC 2.91
-#
-#
+# Target selection:
+
+######################################
+# KISS-68030 - BIOS data shares 32K SRAM with the stack
 MCPU=68030
+BOARD_BASE_ROM  = 0xFFF00000
+BOARD_BASE_DATA = 0xFFFE0000
+######################################
+
+######################################
+# Mini-M68K (*UNTESTED*)
+#MCPU=68000
+#BOARD_BASE_ROM  = 0x00380000
+#BOARD_BASE_DATA = 0x00000400
+######################################
+
+
 CROSS = m68k-elf
 CROSSLIB = /usr/local/stow/m68k/lib/gcc/m68k-elf/4.9.2/
 #
@@ -19,7 +29,7 @@ COPT = -O2 -m$(CPU) -Wall -Werror -D$(RETAIL)
 AS = $(CROSS)-as
 AOPT = -m$(CPU) -alhms --defsym $(RETAIL) --defsym M68000=$(CPU)
 LD = $(CROSS)-ld
-LOPT = -Ttext 0xFFF00000 -Tdata 0x400
+LOPT = -Ttext $(BOARD_BASE_ROM) -Tdata $(BOARD_BASE_DATA)
 UOPT = -Ttext 0x1100 --entry begin
 LIB = $(CROSS)-ar
 LIBS = -L$(CROSSLIB) -lc -lgcc

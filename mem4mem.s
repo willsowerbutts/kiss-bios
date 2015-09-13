@@ -1,6 +1,6 @@
 	.file	"mem4mem.s"
 .globl mem4mem_boards
-.include "mfpic.s"
+.include "hardware.s"
 ######################################################################
 ######################################################################
 ######################################################################
@@ -19,10 +19,10 @@ dev_4mem3	=	dev_4mem0 + 6
 .text
 	.even
 mem4mem_boards:
-	.long KISS68030_IO + dev_4mem0
-	.long KISS68030_IO + dev_4mem1
-	.long KISS68030_IO + dev_4mem2
-	.long KISS68030_IO + dev_4mem3
+	.long BOARD_BASE_IO + dev_4mem0
+	.long BOARD_BASE_IO + dev_4mem1
+	.long BOARD_BASE_IO + dev_4mem2
+	.long BOARD_BASE_IO + dev_4mem3
 	.long -1
 .text
 	.even
