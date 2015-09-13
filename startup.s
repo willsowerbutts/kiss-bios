@@ -255,27 +255,28 @@ copy_data:
     lea msg_welcome(%pc),%a0
     jbsr    put_string
 
-    lea msg_test1(%pc),%a0
-    jbsr    put_string
-
-    lea.l   (maxaddr),%a0
-    lea.l   (mem_ret,%pc),%a6
-    jbra    memtest
-mem_ret:
-    move.l  %a5,h_m_a
-    lea msg_test2(%pc),%a0
-    jbsr    put_string
-
-    sub.l   #maxchip,%a4
-
-    move.l  %a4,%d0
-    jbsr    adout
-
-    lea msg_to(%pc),%a0
-    jbsr    put_string
-    move.l  %a5,%d0
-    jbsr    adout
-    jbsr    crlf
+#### disabled this memory test for now -- note this leaves h_m_a uninitialised.
+####    lea msg_test1(%pc),%a0
+####    jbsr    put_string
+####
+####    lea.l   (maxaddr),%a0
+####    lea.l   (mem_ret,%pc),%a6
+####    jbra    memtest
+####mem_ret:
+####    move.l  %a5,h_m_a
+####    lea msg_test2(%pc),%a0
+####    jbsr    put_string
+####
+####    sub.l   #maxchip,%a4
+####
+####    move.l  %a4,%d0
+####    jbsr    adout
+####
+####    lea msg_to(%pc),%a0
+####    jbsr    put_string
+####    move.l  %a5,%d0
+####    jbsr    adout
+####    jbsr    crlf
 
 /* Set up the Exception Vectors */
 
@@ -625,7 +626,7 @@ regdump:
 ############################################################
 ############################################################
 
-.include  "memtest0.s"      
+# .include  "memtest0.s"      
 ############################################################
 
     .end
