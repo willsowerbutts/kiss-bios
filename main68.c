@@ -190,10 +190,45 @@ void do_ls(const char *path)
     }
 }
 
+#define MEMORY_INCREMENT  (512*1024)        /* test in chunks of 512KB */
+#define MEMORY_TESTOFFSET 0x1100            /* avoid overwriting exception vectors */
+#define MEMORY_MAXIMUM    (long*)0x10000000 /* 256MB */
+#define MEMTEST_VAL1      0x55AA77CC
+#define MEMTEST_VAL2      0xEC3C6D5D
+
+void data_cache_flush(void);
+
+long *memtop = (long*)0;
+
+void probe_memory_size(void)
+{
+    volatile long *testptr;
+
+    do{
+        testptr = memtop + (MEMORY_TESTOFFSET / sizeof(long));
+
+        *testptr = MEMTEST_VAL1;
+        data_cache_flush();
+        if(*testptr != MEMTEST_VAL1)
+            break;
+
+        *testptr = MEMTEST_VAL2;
+        data_cache_flush();
+        if(*testptr != MEMTEST_VAL2)
+            break;
+
+        memtop += (MEMORY_INCREMENT / sizeof(long));
+    }while(memtop < MEMORY_MAXIMUM);
+
+    cprintf("RAM found to address 0x%08x (%dMB)\n", memtop, (long)memtop >> 20);
+}
+
 int main68(void)
 {
     FRESULT fr;
     cprintf("Hello, world!\n");
+
+    probe_memory_size();
 
     fr = f_mount(&fat_fs, "0:", 1);
     if(fr != FR_OK){

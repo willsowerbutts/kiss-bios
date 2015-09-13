@@ -16,15 +16,15 @@ BOARD_BASE_DATA = 0xFFFE0000
 
 
 CROSS = m68k-elf
-CROSSLIB = /usr/local/stow/m68k/lib/gcc/m68k-elf/4.9.2/
+CROSSLIB = -L/usr/local/lib/gcc/m68k-elf/4.9.2/ -L/usr/local/m68k-elf/lib/
 #
 RETAIL=RETAIL=0
 CPU=$(MCPU)
-BIOSSIZE=48
+BIOSSIZE=64
 #
 #
 CC = $(CROSS)-gcc
-COPT = -O2 -m$(CPU) -Wall -Werror -D$(RETAIL)
+COPT = -O2 -malign-int -m$(CPU) -Wall -Werror -D$(RETAIL)
 # -Wa,-alhms,-L
 AS = $(CROSS)-as
 AOPT = -m$(CPU) -alhms --defsym $(RETAIL) --defsym M68000=$(CPU)
@@ -32,7 +32,7 @@ LD = $(CROSS)-ld
 LOPT = -Ttext $(BOARD_BASE_ROM) -Tdata $(BOARD_BASE_DATA)
 UOPT = -Ttext 0x1100 --entry begin
 LIB = $(CROSS)-ar
-LIBS = -L$(CROSSLIB) -lc -lgcc
+LIBS = $(CROSSLIB) -lc -lgcc
 
 TARGET = kiss01
 TUTOR = ../yoda/tutor13b.s68
@@ -69,7 +69,7 @@ TTABLES = test1.sym test1.mod daytime.sym daytime.mod
 LIBFILES = cprintf.o strtoul.o bioscall.o crt0.o
 
 
-all:	test $(TARGET).hex $(TARGET).bin $(TABLES)
+all:	test kissbios.rom $(TABLES)
 test:	test4.bin test3.bin test2.bin test1.bin #daytime.bin $(TTABLES)
 alles:	all test
 cfd:	cfdisk.out
@@ -146,15 +146,9 @@ strtoul.o:	strtoul.c $(HFILES)
 	$(CC) -S $(COPT) $*.c
 	$(AS) $(AOPT) -a=$*.lst -o $*.o $*.s
 
-startup.out:	startup.o bios.a
-	$(LD) $(LOPT) -s -Map startup.map -o startup.out startup.o \
+kissbios.rom:	startup.o bios.a
+	$(LD) $(LOPT) -T startup.lnk -s -Map startup.map -o kissbios.rom startup.o \
 		bios.a $(LIBS)
-
-$(TARGET).hex:	startup.out
-	bin2hex -s 0x2000 -o $(TARGET).hex startup.out
-
-$(TARGET).bin:	$(TARGET).hex
-	hex2bin -R $(BIOSSIZE)k $(TARGET).hex $(INC) -o $(TARGET).bin
 
 mylib.a:   $(LIBFILES)
 	$(LIB) -r $*.a $(LIBFILES)
@@ -162,11 +156,11 @@ mylib.a:   $(LIBFILES)
 bios.a:	   $(OFILES)
 	$(LIB) -r $*.a $(OFILES)
 
-startup.mod:	startup.out
+startup.mod:	kissbios.rom
 	grep ".text" $*.map | grep -v ".o)" | grep ".o" | \
 		grep -v "set to" | sed "s/.text/     /" > $*.mod
 
-startup.sym:	startup.out
+startup.sym:	kissbios.rom
 	grep "                " $*.map | grep -v "=" | grep -v "(" | \
 		grep -v LONG | grep -v "                 " | sort > $*.sym
 
