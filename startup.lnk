@@ -5,20 +5,31 @@ SECTIONS
 {
     /* things that live in ROM */
     .text SEGMENT_START("text", 0xFFF00000) : 
-        { *(.text .stub .text.* .gnu.linkonce.t.*) _etext = . ; 
-          *(.rodata .rodata.* .gnu.linkonce.r.*) 
-          *(.rodata1) 
-          /* this has to be last -- startup.s uses this to locate the .mdata section in ROM */
-          __data_rom = . ;
-          }
+        { 
+            __text_start = . ;
+            *(.text .stub .text.* .gnu.linkonce.t.*) 
+            _etext = . ; 
+            *(.rodata .rodata.* .gnu.linkonce.r.*) 
+            *(.rodata1) 
+            __text_end = . ;
+            __data_rom = . ; /* has to be last -- startup.s uses this to locate the .romdata section in ROM */
+        }
 
     /* things that load to ROM, but later copied to SRAM */
-    .mdata SEGMENT_START("data", 0xFFFE0000) : 
-        AT ( ADDR (.text) + SIZEOF (.text) + SIZEOF(.rodata) + SIZEOF(.rodata1) )
-        { __data_start = . ; _data = . ; *(.data); _edata = . ; __data_end = . ; }
+    .romdata SEGMENT_START("data", 0xFFFE0000) : 
+        AT ( ADDR (.text) + SIZEOF (.text) )
+        { 
+            __data_start = . ; 
+            *(.data); 
+            __data_end = . ; 
+        }
 
     /* no init, lives in SRAM */
-    .bss ADDR (.mdata) + SIZEOF(.mdata) :
-        { __bss_start = . ;  *(.bss) *(COMMON) ; __bss_end = . ; }
+    .bss ADDR (.romdata) + SIZEOF(.romdata) :
+        { 
+            __bss_start = . ;
+            *(.bss) *(COMMON) ;
+            __bss_end = . ; 
+        }
 }
 
