@@ -150,7 +150,8 @@ crlf:
 data_cache_flush:
     /* WRS: need to read the documentation here -- can we write just a single bit
        to flush the data cache, or do we need to read and preserve the other bits? */
-    move.l  #BOARD_CACR0, %d0  /* enable and flush data & instruction caches */
+    movec.l %cacr,%d0
+    or.w    #CACR_CD,%d0    /* clear data cache */
     movec.l %d0,%cacr
     rts
 .endif
@@ -277,6 +278,7 @@ copy_data:
     lea msg_welcome(%pc),%a0
     jbsr    put_string
 
+.if BOARD_BABY
 # Run the (mini-68K) memory test
     lea msg_test1(%pc),%a0
     jbsr    put_string
@@ -286,6 +288,8 @@ copy_data:
     jbra    memtest
 mem_ret:
     move.l  %a5,h_m_a
+    .globl  memtop
+    move.l  %a5,memtop
     lea msg_test2(%pc),%a0
     jbsr    put_string
 
@@ -299,6 +303,28 @@ mem_ret:
     move.l  %a5,%d0
     jbsr    adout
     jbsr    crlf
+.endif
+
+.if BOARD_KISS
+# Determine the state of the 16/64M jumper:
+# Attempt to access memory just over 64MB. If this succeeds, the board is
+# configured to use 64MB modules. If it fails with a bus error (exception 2)
+# the board is configured to use 16MB modules.
+    move.l  8,%a1               /* stash the current trap handler */
+    lea.l   (trap2_taken,%pc),%a2
+    move.l  %a2,8               /* replace it */
+    move.l  %sp,%a0             /* save SP */
+    move.l  #0x4000000,%a2      /* assume 4 x 16MB modules = 64MB max */
+    move.l  (%a2),%d0           /* attempt to read beyond this limit */
+    move.l  #0x10000000,%a2     /* success - 4 x 64MB modules = 256MB max */
+trap2_taken:
+    move.l  %a0,%sp             /* oh dear, we took the trap. restore SP, carry on. */
+    .globl memmax               /* it seems no other clean-up is required? */
+    move.l  %a2,memmax          /* store max possible memory size */
+    move.l  %a1,8               /* restore previous trap handler */
+    .globl  kiss68030_probe_ram /* C comes to the rescue of the lazy programmer */
+    jsr     kiss68030_probe_ram /* sets up memtop, h_m_a for us */
+.endif
 
 # Setup the NS32202 interrupt controller (PIC)
     .globl  ns202_init2
