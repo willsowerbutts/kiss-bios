@@ -20,6 +20,7 @@
 
 **********************************************************************/
 #include <stdbool.h>
+#include <stdlib.h>
 #include <string.h>
 #include "mytypes.h"
 #include "packer.h"
@@ -37,7 +38,6 @@
 #include "ff.h"
 
 void *memset(void *s, int c, size_t n);
-void pretty_dump_memory(void *start, int len);
 int sio_get(void);
 int _con_out(char);
 void _run_us_mode(word mode, void *pc);
@@ -121,24 +121,83 @@ int getline(char *line, int linesize)
 	return k;
 }
 
-void do_ls(const char *path)
+const char *fatfs_errmsg[20] = 
+{
+    /* 0  */ "Succeeded",
+    /* 1  */ "A hard error occurred in the low level disk I/O layer",
+    /* 2  */ "Assertion failed",
+    /* 3  */ "The physical drive cannot work",
+    /* 4  */ "Could not find the file",
+    /* 5  */ "Could not find the path",
+    /* 6  */ "The path name format is invalid",
+    /* 7  */ "Access denied due to prohibited access or directory full",
+    /* 8  */ "Access denied due to prohibited access",
+    /* 9  */ "The file/directory object is invalid",
+    /* 10 */ "The physical drive is write protected",
+    /* 11 */ "The logical drive number is invalid",
+    /* 12 */ "The volume has no work area",
+    /* 13 */ "There is no valid FAT volume",
+    /* 14 */ "The f_mkfs() aborted due to any parameter error",
+    /* 15 */ "Could not get a grant to access the volume within defined period",
+    /* 16 */ "The operation is rejected according to the file sharing policy",
+    /* 17 */ "LFN working buffer could not be allocated",
+    /* 18 */ "Number of open files > _FS_LOCK",
+    /* 19 */ "Given parameter is invalid"
+};
+
+void f_perror(int errno)
+{
+    if(errno <= 19)
+        cprintf("Error: %s\n", fatfs_errmsg[errno]);
+    else
+        cprintf("Error: Unknown error %d. Hold tight.\n", errno);
+}
+
+void do_dump(char *argv[], int argc)
+{
+    unsigned long start, count;
+
+    start = strtoul(argv[0], NULL, 16);
+    count = strtoul(argv[1], NULL, 16);
+
+    pretty_dump_memory((void*)start, count);
+}
+
+void do_cd(char *argv[], int argc)
+{
+    FRESULT r;
+
+    r = f_chdir(argv[0]);
+    if(r != FR_OK)
+        f_perror(r);
+}
+
+void do_ls(char *argv[], int argc)
 {
     FRESULT fr;
+    const char *path;
     DIR fat_dir;
     FILINFO fat_file;
     bool left = true;
     int i;
 
+    if(argc == 0)
+        path = "";
+    else
+        path = argv[0];
+
     fr = f_opendir(&fat_dir, path);
     if(fr != FR_OK){
-        cprintf("Failed f_opendir(\"%s\"): 0x%x\n", path, fr);
+        cprintf("f_opendir(\"%s\"): ", path);
+        f_perror(fr);
         return;
     }
 
     while(1){
         fr = f_readdir(&fat_dir, &fat_file);
         if(fr != FR_OK){
-            cprintf("Failed f_readdir(): 0x%x\n", fr);
+            cprintf("f_readdir(): ");
+            f_perror(fr);
             break;
         }
         if(fat_file.fname[0] == 0) /* end of directory? */
@@ -180,7 +239,8 @@ void do_ls(const char *path)
 
     fr = f_closedir(&fat_dir);
     if(fr != FR_OK){
-        cprintf("Failed f_closedir(): 0x%x\n", fr);
+        cprintf("f_closedir(): ");
+        f_perror(fr);
         return;
     }
 }
@@ -189,6 +249,55 @@ void do_ls(const char *path)
 #define MAXARG 10
 
 FATFS fat_fs_workarea[_VOLUMES];
+
+typedef struct
+{
+    const char *name;
+    const int min_args;
+    const int max_args;
+    void (* function)(char *argv[], int argc);
+} cmd_entry_t;
+
+const cmd_entry_t cmd_table[] = {
+    /* name     min max function */
+    {"ls",      0,  1,  &do_ls},
+    {"dir",     0,  1,  &do_ls},
+    {"cd",      1,  1,  &do_cd},
+    {"dump",    2,  2,  &do_dump},
+    {0, 0, 0, 0} /* terminator */
+};
+
+bool handle_cmd_builtin(char *arg[], int numarg)
+{
+    FRESULT fr;
+    const cmd_entry_t *cmd;
+
+    if(numarg == 1 && arg[0][strlen(arg[0])-1] == ':'){
+        /* change drive */
+        fr = f_chdrive(arg[0]);
+        if(fr)
+            f_perror(fr);
+        return true;
+    } else {
+        /* built-in command */
+        for(cmd = cmd_table; cmd->name; cmd++){
+            if(!strcasecmp(arg[0], cmd->name)){
+                if((numarg-1) >= cmd->min_args && 
+                        (cmd->max_args == 0 || (numarg-1) <= cmd->max_args)){
+                    cmd->function(arg+1, numarg-1);
+                }else{
+                    if(cmd->min_args == cmd->max_args){
+                        cprintf("%s: takes exactly %d argument%s\n", arg[0], cmd->min_args, cmd->min_args == 1 ? "" : "s");
+                    }else{
+                        cprintf("%s: takes %d to %d arguments\n", arg[0], cmd->min_args, cmd->max_args);
+                    }
+                }
+                return true;
+            }
+        }
+    }
+    return false;
+}
 
 int main68(void)
 {
@@ -233,23 +342,8 @@ int main68(void)
         }
 
         if(numarg > 0){
-            if(!strcasecmp(arg[0], "dir") || !strcasecmp(arg[0], "ls")){
-                if(numarg == 1)
-                    do_ls("");
-                else if(numarg == 2)
-                    do_ls(arg[1]);
-                else
-                    cprintf("%s: too many arguments\n", arg[0]);
-            }else if(!strcasecmp(arg[0], "cd")){
-                if(numarg == 2)
-                    f_chdir(arg[1]);
-                else
-                    cprintf("%s: provide exactly 1 argument\n", arg[0]);
-            }else if(numarg == 1 && arg[0][strlen(arg[0])-1] == ':'){
-                f_chdrive(arg[0]);
-            }else{
-                cprintf("%s: unrecognised command\n", arg[0]);
-            }
+            if(!handle_cmd_builtin(arg, numarg))
+                cprintf("%s: unknown command\n", arg[0]);
         }
     }
 

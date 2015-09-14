@@ -54,6 +54,7 @@ int cprintf(char const *fmt, ...);
 int uc_string(char *str, int length);
 int getline(char *line, int linesize);
 void regdump(void);
+void pretty_dump_memory(void *start, int len);
 
 #endif  // _MAIN68_H
 
