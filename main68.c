@@ -41,9 +41,6 @@ void pretty_dump_memory(void *start, int len);
 int sio_get(void);
 int _con_out(char);
 void _run_us_mode(word mode, void *pc);
-#if 0
-int _IDE_WRITE_SECTOR(byte *buffer, long lba_sector, byte slave);
-#endif
 
 extern byte location_zero;
 const char msg_welcome[] =
@@ -124,8 +121,6 @@ int getline(char *line, int linesize)
 	return k;
 }
 
-FATFS fat_fs;
-
 void do_ls(const char *path)
 {
     FRESULT fr;
@@ -190,21 +185,73 @@ void do_ls(const char *path)
     }
 }
 
+#define LINELEN 128
+#define MAXARG 10
+
+FATFS fat_fs_workarea[_VOLUMES];
+
 int main68(void)
 {
-    FRESULT fr;
-    cprintf("Hello, world!\n");
+    char buffer[LINELEN];
+    char *p, *arg[MAXARG+1];
+    int numarg, i;
 
-    fr = f_mount(&fat_fs, "0:", 1);
-    if(fr != FR_OK){
-        cprintf("Failed FAT mount: 0x%x\n", fr);
-        exit(fr);
+    /* set up work areas for each volume */
+    for(i=0; i<_VOLUMES; i++){
+        buffer[0] = '0' + i;
+        buffer[1] = ':';
+        buffer[2] = 0;
+        f_mount(&fat_fs_workarea[i], buffer, 0); /* permit lazy mounting */
     }
 
-    cprintf("\n");
-    do_ls("");
-    cprintf("\n");
-    do_ls("0:/bios.src");
+    while(true){
+        f_getcwd(buffer, LINELEN/sizeof(TCHAR));
+        cprintf("%s> ", buffer);
+        getline(buffer, LINELEN);
+
+        /* parse buffer into list of args */
+        numarg = 0;
+        p = buffer;
+        while(true){
+            if(!*p){ /* end of string? */
+                arg[numarg] = 0;
+                break;
+            }
+            while(isspace(*p))
+                p++;
+            if(!isspace(*p)){
+                arg[numarg++] = p;
+                while(*p && !isspace(*p))
+                    p++;
+                if(!*p)
+                    continue;
+                while(isspace(*p)){
+                    *p=0;
+                    p++;
+                }
+            }
+        }
+
+        if(numarg > 0){
+            if(!strcasecmp(arg[0], "dir") || !strcasecmp(arg[0], "ls")){
+                if(numarg == 1)
+                    do_ls("");
+                else if(numarg == 2)
+                    do_ls(arg[1]);
+                else
+                    cprintf("%s: too many arguments\n", arg[0]);
+            }else if(!strcasecmp(arg[0], "cd")){
+                if(numarg == 2)
+                    f_chdir(arg[1]);
+                else
+                    cprintf("%s: provide exactly 1 argument\n", arg[0]);
+            }else if(numarg == 1 && arg[0][strlen(arg[0])-1] == ':'){
+                f_chdrive(arg[0]);
+            }else{
+                cprintf("%s: unrecognised command\n", arg[0]);
+            }
+        }
+    }
 
     return 0;
 }
