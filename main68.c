@@ -27,6 +27,7 @@
 #include "mfpic.h"
 #include "dosdisk.h"
 #include "ide.h"
+#include "elf.h"
 #include "coff.h"
 #include "main68.h"
 #include "bioscall.h"
@@ -299,6 +300,156 @@ bool handle_cmd_builtin(char *arg[], int numarg)
     return false;
 }
 
+bool load_elf_executable(char *arg[], int numarg, FIL *fd)
+{
+    int proghead_num;
+    unsigned int bytes_read;
+    elf32_header header;
+    elf32_program_header proghead;
+    bool loaded = false;
+
+    if(f_read(fd, &header, sizeof(header), &bytes_read) != FR_OK || bytes_read != sizeof(header)){
+        cprintf("Cannot read ELF file header\n");
+        return false;
+    }
+
+    if(header.ident_magic[0] != 0x7F ||
+       header.ident_magic[1] != 'E' ||
+       header.ident_magic[2] != 'L' ||
+       header.ident_magic[3] != 'F' ||
+       header.ident_version != 1){
+        cprintf("Bad ELF header\n");
+        return false;
+    }
+
+    if(header.ident_class != 1 || /* 32-bit */
+       header.ident_data != 2 ||  /* big-endian */
+       header.ident_osabi != 0 ||
+       header.ident_abiversion != 0){
+        cprintf("Not a 32-bit ELF file.\n");
+        return false;
+    }
+
+    if(header.type != 2){
+        cprintf("ELF file is not an executable.\n");
+        return false;
+    }
+
+    if(header.machine != 4){
+        cprintf("ELF file is not for 68000 processor.\n");
+        return false;
+    }
+
+    for(proghead_num=0; proghead_num < header.phnum; proghead_num++){
+        f_lseek(fd, header.phoff + proghead_num * header.phentsize);
+        if(f_read(fd, &proghead, sizeof(proghead), &bytes_read) != FR_OK || bytes_read != sizeof(proghead)){
+            cprintf("Cannot read ELF program header.\n");
+            return false;
+        }
+        switch(proghead.type){
+            case PT_NULL:
+            case PT_NOTE:
+            case PT_PHDR:
+                break;
+            case PT_SHLIB: /* "reserved but has unspecified semantics" */
+            case PT_DYNAMIC:
+                cprintf("ELF executable is dynamically linked.\n");
+                return false;
+            case PT_LOAD:
+                if(proghead.paddr == 0){
+                    /* patch up sections which want to overwrite the processor vectors */
+                    cprintf("Skipping 0x1000 bytes to avoid overwriting CPU vector table\n");
+                    proghead.offset += 0x1000;
+                    proghead.paddr += 0x1000;
+                    proghead.filesz -= 0x1000;
+                    proghead.memsz -= 0x1000;
+                }
+                cprintf("Loading %d bytes from file offset 0x%x to memory at 0x%x\n", proghead.filesz, proghead.offset, proghead.paddr);
+                f_lseek(fd, proghead.offset);
+                if(f_read(fd, (char*)proghead.paddr, proghead.filesz, &bytes_read) != FR_OK || 
+                        bytes_read != proghead.filesz){
+                    cprintf("Unable to read segment from ELF file.\n");
+                    return false;
+                }
+                if(proghead.memsz > proghead.filesz)
+                    memset((char*)proghead.paddr + proghead.filesz, 0, 
+                            proghead.memsz - proghead.filesz);
+                loaded = true;
+                break;
+            case PT_INTERP:
+                cprintf("ELF executable requires an interpreter.\n");
+                return false;
+        }
+    }
+
+    if(loaded){
+        cprintf("Entry vector at 0x%x\n", header.entry);
+        _run_us_mode(1, (void*)header.entry);
+    }
+
+    return true;
+}
+
+void load_coff_executable(char *arg[], int numarg, FIL *fd)
+{
+    cprintf("Loading COFF executable\n");
+    cprintf("[unimplemented]\n");
+}
+
+void load_flat_executable(char *arg[], int numarg, FIL *fd)
+{
+    cprintf("Loading flat binary\n");
+    cprintf("[unimplemented]\n");
+}
+
+#define HEADER_EXAMINE_SIZE 4 /* number of bytes we need to load to determine the file type */
+const char coff_header_bytes[2] = { 0x01, 0x50 };
+const char elf_header_bytes[4]  = { 0x7F, 0x45, 0x4c, 0x46 };
+
+bool handle_cmd_executable(char *arg[], int numarg)
+{
+    FIL fd;
+    FRESULT fr;
+    char buffer[HEADER_EXAMINE_SIZE];
+    unsigned int br;
+
+    fr = f_open(&fd, arg[0], FA_READ);
+
+    if(fr == FR_NO_FILE || fr == FR_NO_PATH) // file doesn't exist?
+        return false;
+
+    if(fr != FR_OK){
+        cprintf("%s: Cannot load: ", arg[0]);
+        f_perror(fr);
+        return true; // we tried and failed
+    }
+
+    memset(buffer, 0, HEADER_EXAMINE_SIZE);
+
+    cprintf("%s: Open, %d bytes.\n", arg[0], f_size(&fd));
+
+    /* sniff the first few bytes, then rewind to the start of the file */
+    fr = f_read(&fd, buffer, HEADER_EXAMINE_SIZE, &br);
+    f_lseek(&fd, 0);
+
+    if(fr == FR_OK){
+        cprintf("Read %d bytes:\n", br);
+        if(memcmp(buffer, elf_header_bytes, sizeof(elf_header_bytes)) == 0)
+            load_elf_executable(arg, numarg, &fd);
+        else if(memcmp(buffer, coff_header_bytes, sizeof(coff_header_bytes)) == 0)
+            load_coff_executable(arg, numarg, &fd);
+        else
+            load_flat_executable(arg, numarg, &fd);
+    }else{
+        cprintf("%s: Cannot read: ", arg[0]);
+        f_perror(fr);
+    }
+
+    f_close(&fd);
+
+    return true;
+}
+
 int main68(void)
 {
     char buffer[LINELEN];
@@ -342,7 +493,8 @@ int main68(void)
         }
 
         if(numarg > 0){
-            if(!handle_cmd_builtin(arg, numarg))
+            if(!handle_cmd_builtin(arg, numarg) &&
+               !handle_cmd_executable(arg, numarg))
                 cprintf("%s: unknown command\n", arg[0]);
         }
     }
