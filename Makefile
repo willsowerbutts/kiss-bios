@@ -233,7 +233,8 @@ test4.sym:	test4.out
 		grep -v LONG | grep -v "                 " | sort > $*.sym
 
 
-
+elftest.out:	elftest.o
+	$(LD) $(UOPT) -s -Map elftest.map -o elftest.out elftest.o
 
 #  cat startup.mod startup.sym | sed -e "s/        / /g" | sort >foo
 

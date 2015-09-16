@@ -41,7 +41,7 @@
 void *memset(void *s, int c, size_t n);
 int sio_get(void);
 int _con_out(char);
-void _run_us_mode(word mode, void *pc);
+void _run_us_mode(long mode, void *pc);
 
 extern byte location_zero;
 const char msg_welcome[] =
@@ -164,6 +164,40 @@ void do_dump(char *argv[], int argc)
     pretty_dump_memory((void*)start, count);
 }
 
+void do_writemem(char *argv[], int argc)
+{
+    unsigned long value;
+    unsigned char *ptr;
+    int i;
+
+    value = strtoul(argv[0], NULL, 16);
+    ptr = (unsigned char*)value;
+
+    for(i=1; i<argc; i++)
+        *(ptr++) = strtoul(argv[i], NULL, 16);
+}
+
+void do_execute(char *argv[], int argc)
+{
+    unsigned long address;
+    bool usermode = true;
+    funcptr_t ptr;
+
+    address = strtoul(argv[0], NULL, 16);
+    if(argc == 2){
+        if(!strcasecmp(argv[1], "user"))
+            usermode = true;
+        else if(!strcasecmp(argv[1], "system"))
+            usermode = false;
+    }
+
+    cprintf("Entry at at 0x%x in %s mode\n", address, usermode ? "user" : "system");
+    _run_us_mode(usermode? 0 : 1, (void*)address);
+    // typedef void (*funcptr_t)(void);
+    // ptr = (funcptr_t)address;
+    // ptr();
+}
+
 void do_cd(char *argv[], int argc)
 {
     FRESULT r;
@@ -246,9 +280,6 @@ void do_ls(char *argv[], int argc)
     }
 }
 
-#define LINELEN 128
-#define MAXARG 10
-
 FATFS fat_fs_workarea[_VOLUMES];
 
 typedef struct
@@ -265,6 +296,8 @@ const cmd_entry_t cmd_table[] = {
     {"dir",     0,  1,  &do_ls},
     {"cd",      1,  1,  &do_cd},
     {"dump",    2,  2,  &do_dump},
+    {"wm",      2,  0,  &do_writemem},
+    {"execute", 1,  2,  &do_execute},
     {0, 0, 0, 0} /* terminator */
 };
 
@@ -302,11 +335,24 @@ bool handle_cmd_builtin(char *arg[], int numarg)
 
 bool load_elf_executable(char *arg[], int numarg, FIL *fd)
 {
-    int proghead_num;
+    int i, proghead_num;
     unsigned int bytes_read;
     elf32_header header;
     elf32_program_header proghead;
     bool loaded = false;
+    bool usermode = true;
+    long highest = 0;
+
+    for(i=1; i<numarg; i++){
+        if(!strcasecmp(arg[i], "user"))
+            usermode = true;
+        else if(!strcasecmp(arg[i], "system"))
+            usermode = false;
+        else{
+            cprintf("Unrecognised argument \"%s\".\n", arg[i]);
+            return false;
+        }
+    }
 
     if(f_read(fd, &header, sizeof(header), &bytes_read) != FR_OK || bytes_read != sizeof(header)){
         cprintf("Cannot read ELF file header\n");
@@ -358,7 +404,6 @@ bool load_elf_executable(char *arg[], int numarg, FIL *fd)
             case PT_LOAD:
                 if(proghead.paddr == 0){
                     /* patch up sections which want to overwrite the processor vectors */
-                    cprintf("Skipping 0x1000 bytes to avoid overwriting CPU vector table\n");
                     proghead.offset += 0x1000;
                     proghead.paddr += 0x1000;
                     proghead.filesz -= 0x1000;
@@ -374,6 +419,7 @@ bool load_elf_executable(char *arg[], int numarg, FIL *fd)
                 if(proghead.memsz > proghead.filesz)
                     memset((char*)proghead.paddr + proghead.filesz, 0, 
                             proghead.memsz - proghead.filesz);
+                highest = proghead.offset + proghead.filesz;
                 loaded = true;
                 break;
             case PT_INTERP:
@@ -383,8 +429,9 @@ bool load_elf_executable(char *arg[], int numarg, FIL *fd)
     }
 
     if(loaded){
-        cprintf("Entry vector at 0x%x\n", header.entry);
-        _run_us_mode(1, (void*)header.entry);
+        pretty_dump_memory((void*)0x1000, highest - 0x1000);
+        cprintf("Entry at at 0x%x in %s mode\n", header.entry, usermode ? "user" : "system");
+        _run_us_mode(usermode? 0 : 1, (void*)header.entry);
     }
 
     return true;
@@ -426,20 +473,23 @@ bool handle_cmd_executable(char *arg[], int numarg)
 
     memset(buffer, 0, HEADER_EXAMINE_SIZE);
 
-    cprintf("%s: Open, %d bytes.\n", arg[0], f_size(&fd));
+    cprintf("%s: %d bytes, ", arg[0], f_size(&fd));
 
     /* sniff the first few bytes, then rewind to the start of the file */
     fr = f_read(&fd, buffer, HEADER_EXAMINE_SIZE, &br);
     f_lseek(&fd, 0);
 
     if(fr == FR_OK){
-        cprintf("Read %d bytes:\n", br);
-        if(memcmp(buffer, elf_header_bytes, sizeof(elf_header_bytes)) == 0)
+        if(memcmp(buffer, elf_header_bytes, sizeof(elf_header_bytes)) == 0){
+            cprintf("ELF.\n");
             load_elf_executable(arg, numarg, &fd);
-        else if(memcmp(buffer, coff_header_bytes, sizeof(coff_header_bytes)) == 0)
+        }else if(memcmp(buffer, coff_header_bytes, sizeof(coff_header_bytes)) == 0){
+            cprintf("COFF.\n");
             load_coff_executable(arg, numarg, &fd);
-        else
+        }else{
+            cprintf("unknown.\n");
             load_flat_executable(arg, numarg, &fd);
+        }
     }else{
         cprintf("%s: Cannot read: ", arg[0]);
         f_perror(fr);
@@ -450,28 +500,31 @@ bool handle_cmd_executable(char *arg[], int numarg)
     return true;
 }
 
+#define LINELEN 1024
+#define MAXARG 40
+char linebuffer[LINELEN];
+
 int main68(void)
 {
-    char buffer[LINELEN];
     char *p, *arg[MAXARG+1];
     int numarg, i;
 
     /* set up work areas for each volume */
     for(i=0; i<_VOLUMES; i++){
-        buffer[0] = '0' + i;
-        buffer[1] = ':';
-        buffer[2] = 0;
-        f_mount(&fat_fs_workarea[i], buffer, 0); /* permit lazy mounting */
+        linebuffer[0] = '0' + i;
+        linebuffer[1] = ':';
+        linebuffer[2] = 0;
+        f_mount(&fat_fs_workarea[i], linebuffer, 0); /* permit lazy mounting */
     }
 
     while(true){
-        f_getcwd(buffer, LINELEN/sizeof(TCHAR));
-        cprintf("%s> ", buffer);
-        getline(buffer, LINELEN);
+        f_getcwd(linebuffer, LINELEN/sizeof(TCHAR));
+        cprintf("%s> ", linebuffer);
+        getline(linebuffer, LINELEN);
 
-        /* parse buffer into list of args */
+        /* parse linebuffer into list of args */
         numarg = 0;
-        p = buffer;
+        p = linebuffer;
         while(true){
             if(numarg == MAXARG){
                 cprintf("Limiting to %d arguments.\n", numarg);
