@@ -473,6 +473,10 @@ int main68(void)
         numarg = 0;
         p = buffer;
         while(true){
+            if(numarg == MAXARG){
+                cprintf("Limiting to %d arguments.\n", numarg);
+                *p = 0;
+            }
             if(!*p){ /* end of string? */
                 arg[numarg] = 0;
                 break;
