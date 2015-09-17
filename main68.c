@@ -164,21 +164,59 @@ void do_dump(char *argv[], int argc)
     pretty_dump_memory((void*)start, count);
 }
 
+static int fromhex(char c)
+{
+    if(c >= '0' && c <= '9')
+        return c - '0';
+    if(c >= 'a' && c <= 'f')
+        return 10 + c - 'a';
+    if(c >= 'A' && c <= 'F')
+        return 10 + c - 'A';
+    return -1;
+}
+
 void do_writemem(char *argv[], int argc)
 {
     unsigned long value;
     unsigned char *ptr;
-    int i;
+    int i, j, l;
 
     value = strtoul(argv[0], NULL, 16);
     ptr = (unsigned char*)value;
 
-    /* the parsing could be improved here: strings > 2 chars long could be
-       interpreted as a series of bytes, so 123456 = 12 34 56 then one
-       could write intermixed bytes, words and dwords naturally */
+    /* This can deal with values like: 1, 12, 1234, 123456, 12345678.
+       Values > 2 characters are interpreted as big-endian words ie
+       "12345678" is the same as "12 34 56 78" */
 
-    for(i=1; i<argc; i++)
-        *(ptr++) = strtoul(argv[i], NULL, 16);
+    /* first check we're happy with the arguments */
+    for(i=1; i<argc; i++){
+        l = strlen(argv[i]);
+        if(l != 1 && l % 2){
+            cprintf("Ambiguous value: \"%s\" (odd length).\n", argv[i]);
+            return; /* abort! */
+        }
+        for(j=0; j<l; j++)
+            if(fromhex(argv[i][j]) < 0){
+                cprintf("Bad hex character \"%c\" in value \"%s\".\n", argv[i][j], argv[i]);
+                return; /* abort! */
+            }
+    }
+
+    /* then we do the write */
+    for(i=1; i<argc; i++){
+        l = strlen(argv[i]);
+        if(l <= 2) /* one or two characters - a single byte */
+            *(ptr++) = strtoul(argv[i], NULL, 16);
+        else{
+            /* it's a multi-byte value */
+            j=0;
+            while(j<l){
+                value = (fromhex(argv[i][j]) << 4) | fromhex(argv[i][j+1]);
+                *(ptr++) = (unsigned char)value;
+                j += 2;
+            }
+        }
+    }
 }
 
 void do_execute(char *argv[], int argc)
@@ -195,7 +233,7 @@ void do_execute(char *argv[], int argc)
     }
 
     cprintf("Entry at 0x%x in %s mode\n", address, usermode ? "user" : "system");
-    _run_us_mode(usermode? 0 : 1, (void*)address);
+    _run_us_mode(usermode? 0 : 0x2000, (void*)address);
 }
 
 void do_cd(char *argv[], int argc)
@@ -430,16 +468,81 @@ bool load_elf_executable(char *arg[], int numarg, FIL *fd)
 
     if(loaded){
         cprintf("Entry at 0x%x in %s mode\n", header.entry, usermode ? "user" : "system");
-        _run_us_mode(usermode? 0 : 1, (void*)header.entry);
+        _run_us_mode(usermode? 0 : 0x2000, (void*)header.entry);
     }
 
     return true;
 }
 
-void load_coff_executable(char *arg[], int numarg, FIL *fd)
+char * const coff_section_names[3] = { ".text", ".data", ".bss" };
+
+bool load_coff_executable(char *arg[], int numarg, FIL *fd)
 {
-    cprintf("Loading COFF executable\n");
-    cprintf("[unimplemented]\n");
+    bool usermode = true;
+    unsigned int bytes_read;
+    int i;
+    T_aout_head header;
+
+    for(i=1; i<numarg; i++){
+        if(!strcasecmp(arg[i], "user"))
+            usermode = true;
+        else if(!strcasecmp(arg[i], "system") || !strcasecmp(arg[i], "supervisor"))
+            usermode = false;
+        else{
+            cprintf("Unrecognised argument \"%s\".\n", arg[i]);
+            return false;
+        }
+    }
+
+    if(f_read(fd, &header, sizeof(header), &bytes_read) != FR_OK || bytes_read != sizeof(header)){
+        cprintf("Cannot read COFF file header\n");
+        return false;
+    }
+
+    if(header.magic != MAGIC_COFF || header.n_sects != 3){
+        cprintf("Bad COFF header\n");
+        return false;
+    }
+
+    for(i=0; i<3; i++){
+        if(strcmp(header.section[i].section_name, coff_section_names[i])){
+            cprintf("COFF file has unexpected section names.\n");
+            return false;
+        }
+        if(header.section[i].load_at < 0x1000){
+            cprintf("COFF file would overwrite processor vectors.\n");
+            return false;
+        }
+    }
+
+    /* load the resident sections */
+    for(i=0; i<2; i++){
+        if(header.section[i].length){
+            cprintf("Loading section \"%s\": %d bytes from offset 0x%x to memory at 0x%x\n",
+                    header.section[i].section_name, header.section[i].length,
+                    header.section[i].file_pos, header.section[i].load_at);
+
+            f_lseek(fd, header.section[i].file_pos);
+            if(f_read(fd, (char*)header.section[i].load_at, header.section[i].length, &bytes_read) != FR_OK || 
+                    bytes_read != header.section[i].length){
+                cprintf("Unable to read section from COFF file.\n");
+                return false;
+            }
+        }
+    }
+
+    /* zero out the BSS */
+    if(header.section[2].length){
+        cprintf("Zeroing \"%s\": %d bytes at 0x%x\n",
+                    header.section[2].section_name, header.section[2].length,
+                    header.section[2].load_at);
+        memset((char*)header.section[2].load_at, 0, header.section[2].length);
+    }
+
+    cprintf("Entry at 0x%x in %s mode\n", header.entry_point, usermode ? "user" : "system");
+    _run_us_mode(usermode? 0 : 0x2000, (void*)header.entry_point);
+
+    return true;
 }
 
 bool load_flat_executable(char *arg[], int numarg, FIL *fd)
@@ -452,7 +555,7 @@ bool load_flat_executable(char *arg[], int numarg, FIL *fd)
         return false;
     }
 
-    loadaddr = strtoul(argv[1], NULL, 16);
+    loadaddr = strtoul(arg[1], NULL, 16);
 
     cprintf("Loading flat binary at 0x%x\n", loadaddr);
 
@@ -504,7 +607,7 @@ bool handle_cmd_executable(char *arg[], int numarg)
             cprintf("COFF.\n");
             load_coff_executable(arg, numarg, &fd);
         }else{
-            cprintf("unknown.\n");
+            cprintf("unknown format.\n");
             load_flat_executable(arg, numarg, &fd);
         }
     }else{
