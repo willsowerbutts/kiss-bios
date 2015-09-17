@@ -1,7 +1,7 @@
 /* coff.h -- M68k coff a.out format */
 /*
-	Copyright (C) 2011 John R. Coffman.
-	Licensed for hobbyist use on the N8VEM baby M68k CPU board.
+    Copyright (C) 2011 John R. Coffman.
+    Licensed for hobbyist use on the N8VEM baby M68k CPU board.
 ***********************************************************************
 
     This program is free software: you can redistribute it and/or modify
@@ -19,31 +19,33 @@
     program.  If not, see <http://www.gnu.org/licenses/>.
 
 **********************************************************************/
-#ifndef	_COFF_H
-#define	_COFF_H 1
+#ifndef _COFF_H
+#define _COFF_H 1
 #include "mytypes.h"
+
+#define MAGIC_COFF 0x0150
 
 typedef
 struct COFF_SECT {
-	char section_name[8];
-	dword	win32_at;			/* redundant load location */
-	dword	load_at;				/* load section here */
-	dword	length;				/* length of section in bytes */
-	dword	file_pos;			/* position in file of section data */
-	dword	unknown[3];			/* MBZ */
-	dword	type_info;			/* hex types: 20h, 40h, 80h for .text, .data, .bss */ 
+    char section_name[8];
+    dword   win32_at;           /* redundant load location */
+    dword   load_at;            /* load section here */
+    dword   length;             /* length of section in bytes */
+    dword   file_pos;           /* position in file of section data */
+    dword   unknown[3];         /* MBZ */
+    dword   type_info;          /* hex types: 20h, 40h, 80h for .text, .data, .bss */ 
 } T_coff_sect;
 
 typedef
 struct AOUT_HEAD {
-	word	magic;		/* 0x5001 */
-	word	n_sects;		/* number of sections */
-	dword	reserved[5];	/* unknown usage */
-	dword	sect_len[3];	/* lengths of 3 sections:  .text, .data, .bss */
-	dword	entry_point;	/* start execution here */
-	dword	text_load_at;	/* load .text here */
-	dword data_load_at;	/* load .data here */
-	T_coff_sect section[3];	/* multiple section headers */
+    word    magic;          /* 0x5001 */
+    word    n_sects;        /* number of sections */
+    dword   reserved[5];    /* unknown usage */
+    dword   sect_len[3];    /* lengths of 3 sections:  .text, .data, .bss */
+    dword   entry_point;    /* start execution here */
+    dword   text_load_at;   /* load .text here */
+    dword data_load_at;     /* load .data here -- WRS: does not always match section headers! */
+    T_coff_sect section[3]; /* multiple section headers */
 } T_aout_head;
 
-#endif	// _COFF_H
+#endif  // _COFF_H
