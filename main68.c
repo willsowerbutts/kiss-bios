@@ -41,7 +41,7 @@
 void *memset(void *s, int c, size_t n);
 int sio_get(void);
 int _con_out(char);
-void _run_us_mode(long mode, void *pc);
+void _run_us_mode(word mode, void *pc);
 
 extern byte location_zero;
 const char msg_welcome[] =
@@ -173,6 +173,10 @@ void do_writemem(char *argv[], int argc)
     value = strtoul(argv[0], NULL, 16);
     ptr = (unsigned char*)value;
 
+    /* the parsing could be improved here: strings > 2 chars long could be
+       interpreted as a series of bytes, so 123456 = 12 34 56 then one
+       could write intermixed bytes, words and dwords naturally */
+
     for(i=1; i<argc; i++)
         *(ptr++) = strtoul(argv[i], NULL, 16);
 }
@@ -181,21 +185,17 @@ void do_execute(char *argv[], int argc)
 {
     unsigned long address;
     bool usermode = true;
-    funcptr_t ptr;
 
     address = strtoul(argv[0], NULL, 16);
     if(argc == 2){
         if(!strcasecmp(argv[1], "user"))
             usermode = true;
-        else if(!strcasecmp(argv[1], "system"))
+        else if(!strcasecmp(argv[1], "system") || !strcasecmp(argv[1], "supervisor"))
             usermode = false;
     }
 
-    cprintf("Entry at at 0x%x in %s mode\n", address, usermode ? "user" : "system");
+    cprintf("Entry at 0x%x in %s mode\n", address, usermode ? "user" : "system");
     _run_us_mode(usermode? 0 : 1, (void*)address);
-    // typedef void (*funcptr_t)(void);
-    // ptr = (funcptr_t)address;
-    // ptr();
 }
 
 void do_cd(char *argv[], int argc)
@@ -291,13 +291,15 @@ typedef struct
 } cmd_entry_t;
 
 const cmd_entry_t cmd_table[] = {
-    /* name     min max function */
-    {"ls",      0,  1,  &do_ls},
-    {"dir",     0,  1,  &do_ls},
-    {"cd",      1,  1,  &do_cd},
-    {"dump",    2,  2,  &do_dump},
-    {"wm",      2,  0,  &do_writemem},
-    {"execute", 1,  2,  &do_execute},
+    /* name         min max function */
+    {"ls",          0,  1,  &do_ls},
+    {"dir",         0,  1,  &do_ls},
+    {"cd",          1,  1,  &do_cd},
+    {"dm",          2,  2,  &do_dump},
+    {"dump",        2,  2,  &do_dump},
+    {"wm",          2,  0,  &do_writemem},
+    {"writemem",    2,  0,  &do_writemem},  /* writemem <addr> [byte...] */
+    {"execute",     1,  2,  &do_execute},   /* execute <addr> [user|system] */
     {0, 0, 0, 0} /* terminator */
 };
 
@@ -341,12 +343,11 @@ bool load_elf_executable(char *arg[], int numarg, FIL *fd)
     elf32_program_header proghead;
     bool loaded = false;
     bool usermode = true;
-    long highest = 0;
 
     for(i=1; i<numarg; i++){
         if(!strcasecmp(arg[i], "user"))
             usermode = true;
-        else if(!strcasecmp(arg[i], "system"))
+        else if(!strcasecmp(arg[i], "system") || !strcasecmp(arg[i], "supervisor"))
             usermode = false;
         else{
             cprintf("Unrecognised argument \"%s\".\n", arg[i]);
@@ -419,7 +420,6 @@ bool load_elf_executable(char *arg[], int numarg, FIL *fd)
                 if(proghead.memsz > proghead.filesz)
                     memset((char*)proghead.paddr + proghead.filesz, 0, 
                             proghead.memsz - proghead.filesz);
-                highest = proghead.offset + proghead.filesz;
                 loaded = true;
                 break;
             case PT_INTERP:
@@ -429,8 +429,7 @@ bool load_elf_executable(char *arg[], int numarg, FIL *fd)
     }
 
     if(loaded){
-        pretty_dump_memory((void*)0x1000, highest - 0x1000);
-        cprintf("Entry at at 0x%x in %s mode\n", header.entry, usermode ? "user" : "system");
+        cprintf("Entry at 0x%x in %s mode\n", header.entry, usermode ? "user" : "system");
         _run_us_mode(usermode? 0 : 1, (void*)header.entry);
     }
 
@@ -443,10 +442,28 @@ void load_coff_executable(char *arg[], int numarg, FIL *fd)
     cprintf("[unimplemented]\n");
 }
 
-void load_flat_executable(char *arg[], int numarg, FIL *fd)
+bool load_flat_executable(char *arg[], int numarg, FIL *fd)
 {
-    cprintf("Loading flat binary\n");
-    cprintf("[unimplemented]\n");
+    unsigned long loadaddr;
+    unsigned int bytes_read;
+
+    if(numarg != 2){
+        cprintf("Please specify the load address as an argument (in hex).\n");
+        return false;
+    }
+
+    loadaddr = strtoul(argv[1], NULL, 16);
+
+    cprintf("Loading flat binary at 0x%x\n", loadaddr);
+
+    bytes_read = f_size(fd);
+
+    if(f_read(fd, (char*)loadaddr, bytes_read, &bytes_read) != FR_OK || bytes_read != f_size(fd)){
+        cprintf("Unable to load file.\n");
+        return false;
+    }
+
+    return true;
 }
 
 #define HEADER_EXAMINE_SIZE 4 /* number of bytes we need to load to determine the file type */

@@ -578,13 +578,19 @@ wswap:
 _run_us_mode:
     move.l  h_m_a,%a0
     move.l  %a0,%usp        /* set user stack pointer */
-    move.l  (%sp)+,%d0      /* pop the return address */
+    move.l  (%sp)+,%d0      /* pop the return address (ie address of our caller) */
     move.l  (%sp)+,%d0      /* pop the mode option */
+    move.l  (%sp)+,%d1      /* pop the target vector */
     or.w    %d0,%d0
     jbeq    _user_mode
     or.w    #0x2000,%d0     /* set supervisor mode */
 _user_mode:
-    move.w  %d0,-(%sp)      /* S_bit = "mode", CCR = 0  */
+.if BOARD_KISS
+    /* 68010+ has a different format for the exception stack frame to the 68000 */
+    move.w  #0,-(%sp)       /* format/vector offset: both zero */
+.endif
+    move.l  %d1,-(%sp)      /* entry vector */
+    move.w  %d0,-(%sp)      /* status register; S_bit = "mode", CCR = 0  */
     clr.l   %d0
     clr.l   %d1
     clr.l   %d2
