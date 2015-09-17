@@ -474,8 +474,6 @@ bool load_elf_executable(char *arg[], int numarg, FIL *fd)
     return true;
 }
 
-char * const coff_section_names[3] = { ".text", ".data", ".bss" };
-
 bool load_coff_executable(char *arg[], int numarg, FIL *fd)
 {
     bool usermode = true;
@@ -494,49 +492,45 @@ bool load_coff_executable(char *arg[], int numarg, FIL *fd)
         }
     }
 
-    if(f_read(fd, &header, sizeof(header), &bytes_read) != FR_OK || bytes_read != sizeof(header)){
-        cprintf("Cannot read COFF file header\n");
+    if(f_read(fd, &header, sizeof(header), &bytes_read) != FR_OK || bytes_read < AOUT_HEAD_SIZE){
+        cprintf("Cannot read COFF file header.\n");
         return false;
     }
 
-    if(header.magic != MAGIC_COFF || header.n_sects != 3){
-        cprintf("Bad COFF header\n");
+    if(header.magic != MAGIC_COFF || header.n_sects < 1 || header.n_sects > COFF_MAXSECTION){
+        cprintf("Bad COFF header.\n");
         return false;
     }
 
-    for(i=0; i<3; i++){
-        if(strcmp(header.section[i].section_name, coff_section_names[i])){
-            cprintf("COFF file has unexpected section names.\n");
-            return false;
-        }
-        if(header.section[i].load_at < 0x1000){
+    /* check load addresses */
+    for(i=0; i<header.n_sects; i++){
+        if(header.section[i].file_pos && header.section[i].load_at < 0x1000){
             cprintf("COFF file would overwrite processor vectors.\n");
             return false;
         }
     }
 
     /* load the resident sections */
-    for(i=0; i<2; i++){
+    for(i=0; i<header.n_sects; i++){
         if(header.section[i].length){
-            cprintf("Loading section \"%s\": %d bytes from offset 0x%x to memory at 0x%x\n",
-                    header.section[i].section_name, header.section[i].length,
-                    header.section[i].file_pos, header.section[i].load_at);
+            if(header.section[i].file_pos){
+                cprintf("Loading section \"%s\": %d bytes from offset 0x%x to memory at 0x%x\n",
+                        header.section[i].section_name, header.section[i].length,
+                        header.section[i].file_pos, header.section[i].load_at);
 
-            f_lseek(fd, header.section[i].file_pos);
-            if(f_read(fd, (char*)header.section[i].load_at, header.section[i].length, &bytes_read) != FR_OK || 
-                    bytes_read != header.section[i].length){
-                cprintf("Unable to read section from COFF file.\n");
-                return false;
+                f_lseek(fd, header.section[i].file_pos);
+                if(f_read(fd, (char*)header.section[i].load_at, header.section[i].length, &bytes_read) != FR_OK || 
+                        bytes_read != header.section[i].length){
+                    cprintf("Unable to read section from COFF file.\n");
+                    return false;
+                }
+            }else{
+                cprintf("Zeroing section \"%s\": %d bytes at 0x%x\n",
+                        header.section[2].section_name, header.section[2].length,
+                        header.section[2].load_at);
+                memset((char*)header.section[2].load_at, 0, header.section[2].length);
             }
         }
-    }
-
-    /* zero out the BSS */
-    if(header.section[2].length){
-        cprintf("Zeroing \"%s\": %d bytes at 0x%x\n",
-                    header.section[2].section_name, header.section[2].length,
-                    header.section[2].load_at);
-        memset((char*)header.section[2].load_at, 0, header.section[2].length);
     }
 
     cprintf("Entry at 0x%x in %s mode\n", header.entry_point, usermode ? "user" : "system");

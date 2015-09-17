@@ -24,6 +24,8 @@
 #include "mytypes.h"
 
 #define MAGIC_COFF 0x0150
+#define AOUT_HEAD_SIZE 24
+#define COFF_MAXSECTION 8
 
 typedef
 struct COFF_SECT {
@@ -45,7 +47,7 @@ struct AOUT_HEAD {
     dword   entry_point;    /* start execution here */
     dword   text_load_at;   /* load .text here */
     dword data_load_at;     /* load .data here -- WRS: does not always match section headers! */
-    T_coff_sect section[3]; /* multiple section headers */
+    T_coff_sect section[COFF_MAXSECTION];  /* multiple section headers */
 } T_aout_head;
 
 #endif  // _COFF_H
