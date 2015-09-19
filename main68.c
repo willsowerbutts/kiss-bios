@@ -496,7 +496,6 @@ bool load_elf_executable(char *arg[], int numarg, FIL *fd)
                 }
                 if(bootver->machversions[i].machtype == MACH_KISS68030){
                     if(bootver->machversions[i].version == KISS68030_BOOTI_VERSION){
-                        cprintf(" supported.\n");
                         break; /* phew */
                     }else{
                         cprintf(" wrong bootinfo version.\n");
@@ -509,7 +508,7 @@ bool load_elf_executable(char *arg[], int numarg, FIL *fd)
             /* now we stuff a bootinfo structure at the end of the kernel image */
             bootinfo = (struct bi_record*)highest;
 
-            cprintf("Constructing Linux bootinfo at 0x%x\n", highest);
+            cprintf(" bootinfo at 0x%x\n", bootinfo);
 
             /* machine type */
             bootinfo->tag = BI_MACHTYPE;
