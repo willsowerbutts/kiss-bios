@@ -70,6 +70,9 @@ dispatch_user:
 	move.l	s_ssp,%sp		/* set User SSP */
 	move.l	s_usp,%a1		/* set User USP */
 	move.l	%a1,%usp		/* */
+.if M68000>68000
+	clr.w	-(%sp)			/* format 0 exception frame */
+.endif
 	move.l	s_pc,-(%sp)		/* push User resume PC */
 	move.w	s_sr,-(%sp)
 	movem.l	state,%d0-%d7/%a0-%a6	/* restore User register state */
@@ -94,6 +97,9 @@ common_reentry:
 	and.w	#~TRACE_BIT,%d0		/* clear the TRACE bit */
 	move.w	%d0,s_sr		/* save the program status */
 	move.l	(%sp)+,s_pc		/* save the User resume point */
+.if M68000>68000
+	move.w	(%sp)+,%d0		/* get exception frame type */
+.endif
 	move.l	%sp,s_ssp		/* save user SSP */
 	move.l	%usp,%a1		/* save USP */
 	move.l	%a1,s_usp

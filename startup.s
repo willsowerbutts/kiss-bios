@@ -434,8 +434,10 @@ fmtregs:
     .asciz  "SP %08lx\n"
 
 fmtstack:
-    .asciz  " %08lx %08lx %08lx %08lx %08lx %08lx\n"
-
+.if M68000<68010
+    .ascii  " %08lx"
+.endif
+    .asciz  " %08lx %08lx %08lx %08lx %08lx\n"
 
     .even
 exception_AB:
@@ -499,6 +501,15 @@ econtinue:
     jbsr    space
     move.w  (%sp)+,%d0
     jbsr    wout
+.if M68000>68000
+    jbsr    space
+    move.l  (%sp)+,%d0
+    move.l  %d0,%d7
+    jbsr    lout
+    jbsr    space
+    move.w  (%sp)+,%d0
+    jbsr    wout
+.endif
 .if 1
     pea fmtstack(%pc)
     jsr cprintf
@@ -511,7 +522,7 @@ econtinue:
 # end of line 1
 
 .endif
-    move.l  (%sp)+,%a0
+    move.l  %d7,%a0
     lea.l   (-12,%a0),%a0
     move.l  %a0,%d0
     jbsr    lout
@@ -577,20 +588,19 @@ wswap:
     .globl  _run_us_mode    
 _run_us_mode:
     move.l  h_m_a,%a0
-    move.l  %a0,%usp        /* set user stack pointer */
-    move.l  (%sp)+,%d0      /* pop the return address (ie address of our caller) */
-    move.l  (%sp)+,%d0      /* pop the mode option */
-    move.l  (%sp)+,%d1      /* pop the target vector */
-    or.w    %d0,%d0
-    jbeq    _user_mode
-    or.w    #0x2000,%d0     /* set supervisor mode */
-_user_mode:
-.if BOARD_KISS
-    /* 68010+ has a different format for the exception stack frame to the 68000 */
-    move.w  #0,-(%sp)       /* format/vector offset: both zero */
+    move.l  %a0,%usp                /* set user stack pointer */
+    move.l  (%sp)+,%d0              /* pop the return address */
+    move.l  (%sp)+,%d0              /* pop the mode option */
+.if M68000>68000
+    move.l  (%sp)+,%d1              /* pop start address */
+    clr.w   -(%sp)                  /* set exception frame 0 */
+    move.l  %d1,-(%sp)              /* push start address */
 .endif
-    move.l  %d1,-(%sp)      /* entry vector */
-    move.w  %d0,-(%sp)      /* status register; S_bit = "mode", CCR = 0  */
+    tst.w   %d0                     /* test U/S mode */
+    jbeq    _user_mode
+    or.w    #0x2000,%d0             /* set supervisor mode */
+_user_mode:
+    move.w  %d0,-(%sp)              /* S_bit = "mode", CCR = 0      */
     clr.l   %d0
     clr.l   %d1
     clr.l   %d2
@@ -606,7 +616,7 @@ _user_mode:
     move.l  %d7,%a4
     move.l  %d7,%a5
     move.l  %d7,%a6
-    rte             /* load SR + PC  */
+    rte                             /* load SR + PC  */
 /* user mode program must terminate with an EXIT bios call */
     
 

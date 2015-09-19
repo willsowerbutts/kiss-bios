@@ -31,7 +31,11 @@ bios_call:
 	move.l	8(%a6),%a0
 	movm.l	(%a0),%d0-%d7/%a0-%a5
 	trap	#8
+.if M68000<68010
 	move.w	%sr,-(%sp)
+.else
+	move.w	%ccr,-(%sp)
+.endif
 	clr.w	-(%sp)
 	move.l	%a5,-(%sp)
 	move.l	12(%a6),%a5
