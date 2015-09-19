@@ -154,6 +154,12 @@ data_cache_flush:
     or.w    #CACR_CD,%d0    /* clear data cache */
     movec.l %d0,%cacr
     rts
+
+    .globl cpu_cache_disable
+cpu_cache_disable:
+    move.l  #(CACR_CI+CACR_CD),%d0 /* disable and clear caches -- WRS: do we need to *freeze* them to disable them? */
+    movec.l %d0,%cacr
+    rts
 .endif
 
 

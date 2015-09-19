@@ -30,6 +30,7 @@
 #include "elf.h"
 #include "coff.h"
 #include "main68.h"
+#include "bootinfo.h"
 #include "bioscall.h"
 #if !RETAIL
 #include "debug.h"
@@ -386,6 +387,9 @@ bool load_elf_executable(char *arg[], int numarg, FIL *fd)
     unsigned int lowest=~0;
     elf32_header header;
     elf32_program_header proghead;
+    struct bootversion *bootver;
+    struct bi_record *bootinfo;
+    struct mem_info *meminfo;
     bool loaded = false;
     bool usermode = true;
 
@@ -478,14 +482,88 @@ bool load_elf_executable(char *arg[], int numarg, FIL *fd)
     }
 
     if(loaded){
-#if 0
         /* check for linux kernel */
-        if(*(unsigned long*)(lowest+2) == BOOTINFOV_MAGIC){
-            cprintf("Linux kernel detected.\n");
-            /* check machine is supported? */
-            /* stuff a bootinfo structure at the end of the kernel image ie *highest */
+        bootver = (struct bootversion*)lowest;
+        if(bootver->magic == BOOTINFOV_MAGIC){
+            cprintf("Linux kernel detected:");
+
+            /* check machine type is supported by this kernel */
+            i=0;
+            while(true){
+                if(!bootver->machversions[i].machtype){
+                    cprintf(" does not support KISS68030.\n");
+                    return false;
+                }
+                if(bootver->machversions[i].machtype == MACH_KISS68030){
+                    if(bootver->machversions[i].version == KISS68030_BOOTI_VERSION){
+                        cprintf(" supported.\n");
+                        break; /* phew */
+                    }else{
+                        cprintf(" wrong bootinfo version.\n");
+                        return false;
+                    }
+                }
+                i++; /* next machversion */
+            }
+
+            /* now we stuff a bootinfo structure at the end of the kernel image */
+            bootinfo = (struct bi_record*)highest;
+
+            cprintf("Constructing Linux bootinfo at 0x%x\n", highest);
+
+            /* machine type */
+            bootinfo->tag = BI_MACHTYPE;
+            bootinfo->data[0] = MACH_KISS68030;
+            bootinfo->size = sizeof(struct bi_record) + sizeof(long);
+            bootinfo = (struct bi_record*)(((char*)bootinfo) + bootinfo->size);
+
+            /* CPU type */
+            bootinfo->tag = BI_CPUTYPE;
+            bootinfo->data[0] = CPU_68030;
+            bootinfo->size = sizeof(struct bi_record) + sizeof(long);
+            bootinfo = (struct bi_record*)(((char*)bootinfo) + bootinfo->size);
+
+            /* MMU type */
+            bootinfo->tag = BI_MMUTYPE;
+            bootinfo->data[0] = MMU_68030;
+            bootinfo->size = sizeof(struct bi_record) + sizeof(long);
+            bootinfo = (struct bi_record*)(((char*)bootinfo) + bootinfo->size);
+
+            /* FPU type */
+            bootinfo->tag = BI_MMUTYPE;
+            bootinfo->data[0] = 0; /* no FPU */
+            bootinfo->size = sizeof(struct bi_record) + sizeof(long);
+            bootinfo = (struct bi_record*)(((char*)bootinfo) + bootinfo->size);
+
+            /* RAM location and size */
+            bootinfo->tag = BI_MEMCHUNK;
+            bootinfo->size = sizeof(struct bi_record) + sizeof(struct mem_info);
+            meminfo = (struct mem_info*)bootinfo->data;
+            meminfo->addr = 0;
+            meminfo->size = (unsigned long)memtop;
+            bootinfo = (struct bi_record*)(((char*)bootinfo) + bootinfo->size);
+
+            /* Command line */
+            const char *kernel_cmdline = "ro";
+            i = strlen(kernel_cmdline) + 1;
+            i = (i+3) & ~3; /* pad to 32-bit boundary */
+            bootinfo->tag = BI_COMMAND_LINE;
+            bootinfo->size = sizeof(struct bi_record) + i;
+            memcpy(bootinfo->data, kernel_cmdline, i);
+            bootinfo = (struct bi_record*)(((char*)bootinfo) + bootinfo->size);
+
+            /* terminate the bootinfo structure */
+            bootinfo->tag = BI_LAST;
+            bootinfo->size = sizeof(struct bi_record);
+
+            /* Linux expects us to enter with:
+             * - interrupts disabled (_run_us_mode does this for us)
+             * - CPU cache disabled
+             * - CPU in supervisor mode
+             */
+            usermode = false; /* force supervisor mode */
+            cpu_cache_disable(); /* disable cache */
         }
-#endif
         cprintf("Entry at 0x%x in %s mode\n", header.entry, usermode ? "user" : "system");
         _run_us_mode(usermode? 0 : 0x2000, (void*)header.entry);
     }

@@ -48,6 +48,7 @@ struct NVRAM {
 
 extern long h_m_a;
 extern char debug;
+extern void *memtop;
 
 void exit(int status);
 int cprintf(char const *fmt, ...);
@@ -55,6 +56,9 @@ int uc_string(char *str, int length);
 int getline(char *line, int linesize);
 void regdump(void);
 void pretty_dump_memory(void *start, int len);
+
+void data_cache_flush(void);
+void cpu_cache_disable(void);
 
 #endif  // _MAIN68_H
 

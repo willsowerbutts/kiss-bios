@@ -4,8 +4,6 @@
 #define MEMORY_INCREMENT  ((64*1024)/sizeof(long)) /* test in chunks of 64KB */
 #define MEMORY_TESTOFFSET (0xF800/sizeof(long))    /* test each chunk at 62KB offset */
 
-void data_cache_flush(void);
-
 void *memmax;               /* set by startup code according to 16/64M jumper position */
 void *memtop = (long*)0;    /* determined by kiss68030_probe_ram() */
 
