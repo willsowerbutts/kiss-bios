@@ -455,9 +455,9 @@ bd_out:
 bd_floppy_out:
 	tst.l	%d0
 	bne.s	bd_nok
-	br	bios_good_return
+	br.l	bios_good_return
 bd_nok:
-	br	bios_error_return
+	br.l	bios_error_return
 
 
 

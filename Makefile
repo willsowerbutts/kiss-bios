@@ -20,7 +20,6 @@ CROSSLIB = -L/usr/local/lib/gcc/m68k-elf/4.9.2/ -L/usr/local/m68k-elf/lib/
 #
 RETAIL=RETAIL=0
 CPU=$(MCPU)
-BIOSSIZE=64
 #
 #
 CC = $(CROSS)-gcc
@@ -87,7 +86,7 @@ cpm68.bin:	$(TARGET).bin rom/rom400.bin
 	
 
 main68.o:	main68.c $(HFILES)
-	$(CC) -S $(COPT) -DBIOSSIZE=$(BIOSSIZE) $*.c
+	$(CC) -S $(COPT) $*.c
 	$(AS) $(AOPT) -a=$*.lst -o $*.o $*.s
 
 cprintf.o:	cprintf.c $(HFILES)

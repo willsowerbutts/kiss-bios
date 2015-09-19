@@ -248,7 +248,7 @@ void do_cd(char *argv[], int argc)
 void do_ls(char *argv[], int argc)
 {
     FRESULT fr;
-    const char *path;
+    const char *path, *filename;
     DIR fat_dir;
     FILINFO fat_file;
     bool left = true;
@@ -275,6 +275,11 @@ void do_ls(char *argv[], int argc)
         }
         if(fat_file.fname[0] == 0) /* end of directory? */
             break;
+        filename = 
+#if _USE_LFN
+            *fat_file.lfname ? fat_file.lfname : 
+#endif
+            fat_file.fname;
 
         if(fat_file.fattrib & AM_DIR){
             /* directory */
@@ -285,7 +290,7 @@ void do_ls(char *argv[], int argc)
                     fat_file.ftime >> 11,
                     (fat_file.ftime >> 5) & 0x3F,
                     (fat_file.ftime & 0x1F) << 1,
-                    fat_file.fname);
+                    filename);
             for(i=strlen(fat_file.fname); i<12; i++)
                 cprintf(" ");
         }else{
@@ -297,7 +302,7 @@ void do_ls(char *argv[], int argc)
                     fat_file.ftime >> 11,
                     (fat_file.ftime >> 5) & 0x3F,
                     (fat_file.ftime & 0x1F) << 1,
-                    fat_file.fname);
+                    filename);
         }
 
         if(left)
@@ -377,6 +382,8 @@ bool load_elf_executable(char *arg[], int numarg, FIL *fd)
 {
     int i, proghead_num;
     unsigned int bytes_read;
+    unsigned int highest=0;
+    unsigned int lowest=~0;
     elf32_header header;
     elf32_program_header proghead;
     bool loaded = false;
@@ -458,6 +465,10 @@ bool load_elf_executable(char *arg[], int numarg, FIL *fd)
                 if(proghead.memsz > proghead.filesz)
                     memset((char*)proghead.paddr + proghead.filesz, 0, 
                             proghead.memsz - proghead.filesz);
+                if(proghead.paddr < lowest)
+                    lowest = proghead.paddr;
+                if(proghead.paddr + proghead.filesz > highest)
+                    highest = proghead.paddr + proghead.filesz;
                 loaded = true;
                 break;
             case PT_INTERP:
@@ -467,6 +478,14 @@ bool load_elf_executable(char *arg[], int numarg, FIL *fd)
     }
 
     if(loaded){
+#if 0
+        /* check for linux kernel */
+        if(*(unsigned long*)(lowest+2) == BOOTINFOV_MAGIC){
+            cprintf("Linux kernel detected.\n");
+            /* check machine is supported? */
+            /* stuff a bootinfo structure at the end of the kernel image ie *highest */
+        }
+#endif
         cprintf("Entry at 0x%x in %s mode\n", header.entry, usermode ? "user" : "system");
         _run_us_mode(usermode? 0 : 0x2000, (void*)header.entry);
     }
