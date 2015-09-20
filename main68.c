@@ -505,8 +505,8 @@ bool load_elf_executable(char *arg[], int numarg, FIL *fd)
                 i++; /* next machversion */
             }
 
-            /* now we stuff a bootinfo structure at the end of the kernel image */
-            bootinfo = (struct bi_record*)highest;
+            /* now we write a linux bootinfo structure at the start of the 4K page following the kernel image */
+            bootinfo = (struct bi_record*)((highest + 0xfff) & ~0xfff);
 
             cprintf(" bootinfo at 0x%x\n", bootinfo);
 
