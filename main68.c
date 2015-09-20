@@ -262,7 +262,7 @@ void do_ls(char *argv[], int argc)
     const char *path, *filename;
     DIR fat_dir;
     FILINFO fat_file;
-    bool left = true;
+    bool dir, left = true;
     int i;
 
     if(argc == 0)
@@ -292,33 +292,34 @@ void do_ls(char *argv[], int argc)
 #endif
             fat_file.fname;
 
-        if(fat_file.fattrib & AM_DIR){
+        dir = fat_file.fattrib & AM_DIR;
+
+        if(dir){
             /* directory */
-            cprintf("          %04d-%02d-%02d %02d:%02d:%02d %s/", 
+            cprintf("         %04d-%02d-%02d %02d:%02d %s/", 
                     1980 + ((fat_file.fdate >> 9) & 0x7F),
                     (fat_file.fdate >> 5) & 0xF,
                     fat_file.fdate & 0x1F,
                     fat_file.ftime >> 11,
                     (fat_file.ftime >> 5) & 0x3F,
-                    (fat_file.ftime & 0x1F) << 1,
                     filename);
             for(i=strlen(fat_file.fname); i<12; i++)
                 cprintf(" ");
         }else{
             /* regular file */
-            cprintf("%9d %04d-%02d-%02d %02d:%02d:%02d %-12s ", fat_file.fsize, 
+            cprintf("%8d %04d-%02d-%02d %02d:%02d %-12s", fat_file.fsize, 
                     1980 + ((fat_file.fdate >> 9) & 0x7F),
                     (fat_file.fdate >> 5) & 0xF,
                     fat_file.fdate & 0x1F,
                     fat_file.ftime >> 11,
                     (fat_file.ftime >> 5) & 0x3F,
-                    (fat_file.ftime & 0x1F) << 1,
                     filename);
         }
 
-        if(left)
-            cprintf(" ");
-        else
+        if(left){
+            if(!dir)
+                cprintf(" ");
+        }else
             cprintf("\n");
         left = !left;
     }
@@ -404,7 +405,7 @@ bool load_elf_executable(char *arg[], int numarg, FIL *fd)
     bool usermode = true;
 
     for(i=1; i<numarg; i++){
-        switch(argv[i][0]){
+        switch(arg[i][0]){
             case 'u':
             case 'U':
                 usermode = true;
@@ -414,8 +415,8 @@ bool load_elf_executable(char *arg[], int numarg, FIL *fd)
                 usermode = false;
                 break;
             default:
-                cprintf("Unrecognised argument \"%s\".\n", argv[i]);
-                return;
+                cprintf("Unrecognised argument \"%s\".\n", arg[i]);
+                return false;
         }
     }
 
@@ -593,7 +594,7 @@ bool load_coff_executable(char *arg[], int numarg, FIL *fd)
     T_aout_head header;
 
     for(i=1; i<numarg; i++){
-        switch(argv[i][0]){
+        switch(arg[i][0]){
             case 'u':
             case 'U':
                 usermode = true;
@@ -603,8 +604,8 @@ bool load_coff_executable(char *arg[], int numarg, FIL *fd)
                 usermode = false;
                 break;
             default:
-                cprintf("Unrecognised argument \"%s\".\n", argv[i]);
-                return;
+                cprintf("Unrecognised argument \"%s\".\n", arg[i]);
+                return false;
         }
     }
 
