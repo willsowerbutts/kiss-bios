@@ -243,7 +243,7 @@ void do_execute(char *argv[], int argc)
         }
     }
 
-    cprintf("Entry at 0x%x in %s mode\n", address, usermode ? "user" : "system");
+    cprintf("Entry at 0x%x in %s mode\n", address, usermode ? "user" : "supervisor");
     _run_us_mode(usermode? 0 : 0x2000, (void*)address);
 }
 
@@ -355,7 +355,7 @@ const cmd_entry_t cmd_table[] = {
     {"dump",        2,  2,  &do_dump},
     {"wm",          2,  0,  &do_writemem},
     {"writemem",    2,  0,  &do_writemem},  /* writemem <addr> [byte...] */
-    {"execute",     1,  2,  &do_execute},   /* execute <addr> [user|system] */
+    {"execute",     1,  2,  &do_execute},   /* execute <addr> [u|s] */
     {0, 0, 0, 0} /* terminator */
 };
 
@@ -580,7 +580,7 @@ bool load_elf_executable(char *arg[], int numarg, FIL *fd)
             usermode = false; /* force supervisor mode */
             cpu_cache_disable(); /* disable cache */
         }
-        cprintf("Entry at 0x%x in %s mode\n", header.entry, usermode ? "user" : "system");
+        cprintf("Entry at 0x%x in %s mode\n", header.entry, usermode ? "user" : "supervisor");
         _run_us_mode(usermode? 0 : 0x2000, (void*)header.entry);
     }
 
@@ -651,7 +651,7 @@ bool load_coff_executable(char *arg[], int numarg, FIL *fd)
         }
     }
 
-    cprintf("Entry at 0x%x in %s mode\n", header.entry_point, usermode ? "user" : "system");
+    cprintf("Entry at 0x%x in %s mode\n", header.entry_point, usermode ? "user" : "supervisor");
     _run_us_mode(usermode? 0 : 0x2000, (void*)header.entry_point);
 
     return true;
