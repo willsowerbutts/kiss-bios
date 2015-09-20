@@ -546,7 +546,7 @@ bool load_elf_executable(char *arg[], int numarg, FIL *fd)
             bootinfo = (struct bi_record*)(((char*)bootinfo) + bootinfo->size);
 
             /* FPU type */
-            bootinfo->tag = BI_MMUTYPE;
+            bootinfo->tag = BI_FPUTYPE;
             bootinfo->data[0] = 0; /* no FPU */
             bootinfo->size = sizeof(struct bi_record) + sizeof(long);
             bootinfo = (struct bi_record*)(((char*)bootinfo) + bootinfo->size);
