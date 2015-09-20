@@ -227,10 +227,20 @@ void do_execute(char *argv[], int argc)
 
     address = strtoul(argv[0], NULL, 16);
     if(argc == 2){
-        if(!strcasecmp(argv[1], "user"))
-            usermode = true;
-        else if(!strcasecmp(argv[1], "system") || !strcasecmp(argv[1], "supervisor"))
-            usermode = false;
+        switch(argv[1][0]){
+            case 'u':
+            case 'U':
+                usermode = true;
+                break;
+            case 's':
+            case 'S':
+                usermode = false;
+                break;
+            default:
+                cprintf("Unrecognised argument \"%s\".\n", argv[1]);
+                return;
+
+        }
     }
 
     cprintf("Entry at 0x%x in %s mode\n", address, usermode ? "user" : "system");
@@ -394,13 +404,18 @@ bool load_elf_executable(char *arg[], int numarg, FIL *fd)
     bool usermode = true;
 
     for(i=1; i<numarg; i++){
-        if(!strcasecmp(arg[i], "user"))
-            usermode = true;
-        else if(!strcasecmp(arg[i], "system") || !strcasecmp(arg[i], "supervisor"))
-            usermode = false;
-        else{
-            cprintf("Unrecognised argument \"%s\".\n", arg[i]);
-            return false;
+        switch(argv[i][0]){
+            case 'u':
+            case 'U':
+                usermode = true;
+                break;
+            case 's':
+            case 'S':
+                usermode = false;
+                break;
+            default:
+                cprintf("Unrecognised argument \"%s\".\n", argv[i]);
+                return;
         }
     }
 
@@ -543,7 +558,7 @@ bool load_elf_executable(char *arg[], int numarg, FIL *fd)
             bootinfo = (struct bi_record*)(((char*)bootinfo) + bootinfo->size);
 
             /* Command line */
-            const char *kernel_cmdline = "ro";
+            const char *kernel_cmdline = "console=uart8250,mmio,0xffff0048,115200n8 ro";
             i = strlen(kernel_cmdline) + 1;
             i = (i+3) & ~3; /* pad to 32-bit boundary */
             bootinfo->tag = BI_COMMAND_LINE;
@@ -578,13 +593,18 @@ bool load_coff_executable(char *arg[], int numarg, FIL *fd)
     T_aout_head header;
 
     for(i=1; i<numarg; i++){
-        if(!strcasecmp(arg[i], "user"))
-            usermode = true;
-        else if(!strcasecmp(arg[i], "system") || !strcasecmp(arg[i], "supervisor"))
-            usermode = false;
-        else{
-            cprintf("Unrecognised argument \"%s\".\n", arg[i]);
-            return false;
+        switch(argv[i][0]){
+            case 'u':
+            case 'U':
+                usermode = true;
+                break;
+            case 's':
+            case 'S':
+                usermode = false;
+                break;
+            default:
+                cprintf("Unrecognised argument \"%s\".\n", argv[i]);
+                return;
         }
     }
 
