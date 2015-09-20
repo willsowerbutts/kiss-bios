@@ -316,11 +316,12 @@ void do_ls(char *argv[], int argc)
                     filename);
         }
 
-        if(left){
-            if(!dir)
-                cprintf(" ");
-        }else
+        if(!left)
             cprintf("\n");
+        else if(!dir)
+            cprintf("  ");
+        else
+            cprintf(" ");
         left = !left;
     }
 
