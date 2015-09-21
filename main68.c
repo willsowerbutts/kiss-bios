@@ -52,7 +52,7 @@ const char msg_welcome[] =
 #else
     "        Welcome to the MINI-M68000 System" "\r\n\r\n"
 #endif
-    "BIOS version " VERSION_STRING " of " VERSION_DATE	"\r\n"
+    "KISS-BIOS built " __TIME__ " on " __DATE__ "\r\n"
     "Copyright (C) 2011-2015 John R. Coffman  <johninsd@gmail.com>" "\r\n"
     "Copyright (C) 2015 William R. Sowerbutts <will@sowerbutts.com>" "\r\n"
 #if RETAIL
@@ -560,13 +560,36 @@ bool load_elf_executable(char *arg[], int numarg, FIL *fd)
             bootinfo = (struct bi_record*)(((char*)bootinfo) + bootinfo->size);
 
             /* Command line */
-            const char *kernel_cmdline = "console=uart8250,mmio,0xffff0048,115200n8 ro";
+            const char *kernel_cmdline = "console=ttyS0,115200n8 ro"; /* this should be user-provided, really */
             i = strlen(kernel_cmdline) + 1;
             i = (i+3) & ~3; /* pad to 32-bit boundary */
             bootinfo->tag = BI_COMMAND_LINE;
             bootinfo->size = sizeof(struct bi_record) + i;
             memcpy(bootinfo->data, kernel_cmdline, i);
             bootinfo = (struct bi_record*)(((char*)bootinfo) + bootinfo->size);
+
+            /* check for initrd */
+            const char *initrd_name = "initrd.img"; /* this should be user-provided also */
+            FIL initrd;
+            if( f_open(&initrd, initrd_name, FA_READ) == FR_OK){
+                bootinfo->tag = BI_RAMDISK;
+                bootinfo->size = sizeof(struct bi_record) + sizeof(struct mem_info);
+                meminfo = (struct mem_info*)bootinfo->data;
+                /* we need to locate the initrd some distance above the kernel -- 4MB should be enough? */
+                meminfo->addr = ((((unsigned long)bootinfo) + 0xfff) & ~0xfff) + 0x400000;
+                meminfo->size = f_size(&initrd);
+                cprintf("Loading initrd \"%s\": %d bytes at 0x%x\n", initrd_name, meminfo->size, meminfo->addr);
+                if(f_read(&initrd, (char*)meminfo->addr, meminfo->size, &bytes_read) != FR_OK || 
+                        bytes_read != meminfo->size){
+                    cprintf("Unable to load initrd.\n");
+                    /* if loading initrd fails, we replace this bootinfo record with BI_LAST */
+                }else{
+                    bootinfo = (struct bi_record*)(((char*)bootinfo) + bootinfo->size);
+                }
+                f_close(&initrd);
+            }else{
+                cprintf("Unable to open \"%s\": No initrd.\n", initrd_name);
+            }
 
             /* terminate the bootinfo structure */
             bootinfo->tag = BI_LAST;
