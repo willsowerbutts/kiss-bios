@@ -81,6 +81,9 @@ const char msg_welcome[] =
 
 T_nv_struct nvram;
 
+#define LINELEN 1024
+char inputbuffer[LINELEN];
+
 void rubout(void)
 {
 	_con_out('\b');
@@ -771,67 +774,99 @@ bool handle_cmd_executable(char *arg[], int numarg)
     return true;
 }
 
-#define BOOTLOADER_MODE 0 /* just load linux directly */
-
-#define LINELEN 1024
 #define MAXARG 40
-char linebuffer[LINELEN];
+void execute_cmd(char *linebuffer)
+{
+    char *p, *arg[MAXARG+1];
+    int numarg;
+
+    /* parse linebuffer into list of args */
+    numarg = 0;
+    p = linebuffer;
+    while(true){
+        if(numarg == MAXARG){
+            cprintf("Limiting to %d arguments.\n", numarg);
+            *p = 0;
+        }
+        if(!*p){ /* end of string? */
+            arg[numarg] = 0;
+            break;
+        }
+        while(isspace(*p))
+            p++;
+        if(!isspace(*p)){
+            arg[numarg++] = p;
+            while(*p && !isspace(*p))
+                p++;
+            if(!*p)
+                continue;
+            while(isspace(*p)){
+                *p=0;
+                p++;
+            }
+        }
+    }
+
+    if(numarg > 0){
+        if(!handle_cmd_builtin(arg, numarg) &&
+                !handle_cmd_executable(arg, numarg))
+            cprintf("%s: unknown command\n", arg[0]);
+    }
+}
+
+bool execute_script(const char *filename)
+{
+    FIL fd;
+    int i;
+    bool eof;
+    unsigned int bytes_read;
+
+    if(f_open(&fd, filename, FA_READ) != FR_OK)
+        return false;
+
+    eof = false;
+    i = 0;
+    do{
+        if(f_read(&fd, &inputbuffer[i], 1, &bytes_read) != FR_OK || bytes_read != 1){
+            inputbuffer[i] = '\n';
+            eof = true;
+        }
+        if(inputbuffer[i] == '\n' || inputbuffer[i] == '\r'){
+            inputbuffer[i] = 0;
+            if(i > 0)
+                execute_cmd(inputbuffer);
+            i = 0;
+        }else
+            i++;
+        if(i == LINELEN){
+            cprintf("Script \"%s\": Line too long!\n", filename);
+            eof = true;
+        }
+    }while(!eof);
+
+    f_close(&fd);
+    return true;
+}
 
 int main68(void)
 {
-    char *p, *arg[MAXARG+1];
-    int numarg, i;
+    int i;
 
     /* set up work areas for each volume */
     for(i=0; i<_VOLUMES; i++){
-        linebuffer[0] = '0' + i;
-        linebuffer[1] = ':';
-        linebuffer[2] = 0;
-        f_mount(&fat_fs_workarea[i], linebuffer, 0); /* permit lazy mounting */
+        inputbuffer[0] = '0' + i;
+        inputbuffer[1] = ':';
+        inputbuffer[2] = 0;
+        f_mount(&fat_fs_workarea[i], inputbuffer, 0); /* permit lazy mounting */
     }
 
+    execute_script("0:/boot.cmd");
+
     while(true){
-        f_getcwd(linebuffer, LINELEN/sizeof(TCHAR));
-        cprintf("%s> ", linebuffer);
-
-#if BOOTLOADER_MODE
-        strcpy(linebuffer, "vmlinux console=ttyS0,115200n8 init=/bin/bash root=/dev/hda2");
-#else
-        getline(linebuffer, LINELEN);
-#endif
-
-        /* parse linebuffer into list of args */
-        numarg = 0;
-        p = linebuffer;
-        while(true){
-            if(numarg == MAXARG){
-                cprintf("Limiting to %d arguments.\n", numarg);
-                *p = 0;
-            }
-            if(!*p){ /* end of string? */
-                arg[numarg] = 0;
-                break;
-            }
-            while(isspace(*p))
-                p++;
-            if(!isspace(*p)){
-                arg[numarg++] = p;
-                while(*p && !isspace(*p))
-                    p++;
-                if(!*p)
-                    continue;
-                while(isspace(*p)){
-                    *p=0;
-                    p++;
-                }
-            }
-        }
-
-        if(numarg > 0){
-            if(!handle_cmd_builtin(arg, numarg) &&
-               !handle_cmd_executable(arg, numarg))
-                cprintf("%s: unknown command\n", arg[0]);
-        }
+        f_getcwd(inputbuffer, LINELEN/sizeof(TCHAR));
+        cprintf("%s> ", inputbuffer);
+        getline(inputbuffer, LINELEN);
+        execute_cmd(inputbuffer);
     }
 
     return 0;
