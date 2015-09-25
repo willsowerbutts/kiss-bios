@@ -405,22 +405,7 @@ bool load_elf_executable(char *arg[], int numarg, FIL *fd)
     bool loaded = false;
     bool usermode = true;
 
-    for(i=1; i<numarg; i++){
-        switch(arg[i][0]){
-            case 'u':
-            case 'U':
-                usermode = true;
-                break;
-            case 's':
-            case 'S':
-                usermode = false;
-                break;
-            default:
-                cprintf("Unrecognised argument \"%s\".\n", arg[i]);
-                return false;
-        }
-    }
-
+    f_lseek(fd, 0);
     if(f_read(fd, &header, sizeof(header), &bytes_read) != FR_OK || bytes_read != sizeof(header)){
         cprintf("Cannot read ELF file header\n");
         return false;
@@ -559,8 +544,23 @@ bool load_elf_executable(char *arg[], int numarg, FIL *fd)
             meminfo->size = (unsigned long)memtop;
             bootinfo = (struct bi_record*)(((char*)bootinfo) + bootinfo->size);
 
+            /* Now let's process the user-provided command line */
+            #define MAXCMDLEN 200
+            const char *initrd_name = NULL;
+            char kernel_cmdline[MAXCMDLEN];
+            kernel_cmdline[0] = 0;
+
+            for(i=1; i<numarg; i++){
+                if(!strncasecmp(arg[i], "initrd=", 7)){
+                    initrd_name = &arg[i][7];
+                }else{
+                    if(kernel_cmdline[0])
+                        strncat(kernel_cmdline, " ", MAXCMDLEN);
+                    strncat(kernel_cmdline, arg[i], MAXCMDLEN);
+                }
+            }
+
             /* Command line */
-            const char *kernel_cmdline = "console=ttyS0,115200n8 ro"; /* this should be user-provided, really */
             i = strlen(kernel_cmdline) + 1;
             i = (i+3) & ~3; /* pad to 32-bit boundary */
             bootinfo->tag = BI_COMMAND_LINE;
@@ -569,9 +569,8 @@ bool load_elf_executable(char *arg[], int numarg, FIL *fd)
             bootinfo = (struct bi_record*)(((char*)bootinfo) + bootinfo->size);
 
             /* check for initrd */
-            const char *initrd_name = "initrd.img"; /* this should be user-provided also */
             FIL initrd;
-            if( f_open(&initrd, initrd_name, FA_READ) == FR_OK){
+            if(initrd_name && (f_open(&initrd, initrd_name, FA_READ) == FR_OK)){
                 bootinfo->tag = BI_RAMDISK;
                 bootinfo->size = sizeof(struct bi_record) + sizeof(struct mem_info);
                 meminfo = (struct mem_info*)bootinfo->data;
@@ -587,7 +586,7 @@ bool load_elf_executable(char *arg[], int numarg, FIL *fd)
                     bootinfo = (struct bi_record*)(((char*)bootinfo) + bootinfo->size);
                 }
                 f_close(&initrd);
-            }else{
+            }else if(initrd_name){
                 cprintf("Unable to open \"%s\": No initrd.\n", initrd_name);
             }
 
@@ -602,6 +601,23 @@ bool load_elf_executable(char *arg[], int numarg, FIL *fd)
              */
             usermode = false; /* force supervisor mode */
             cpu_cache_disable(); /* disable cache */
+        }else{
+            /* not linux */
+            for(i=1; i<numarg; i++){
+                switch(arg[i][0]){
+                    case 'u':
+                    case 'U':
+                        usermode = true;
+                        break;
+                    case 's':
+                    case 'S':
+                        usermode = false;
+                        break;
+                    default:
+                        cprintf("Unrecognised argument \"%s\".\n", arg[i]);
+                        return false;
+                }
+            }
         }
         cprintf("Entry at 0x%x in %s mode\n", header.entry, usermode ? "user" : "supervisor");
         _run_us_mode(usermode? 0 : 0x2000, (void*)header.entry);
@@ -755,6 +771,8 @@ bool handle_cmd_executable(char *arg[], int numarg)
     return true;
 }
 
+#define BOOTLOADER_MODE 0 /* just load linux directly */
+
 #define LINELEN 1024
 #define MAXARG 40
 char linebuffer[LINELEN];
@@ -775,7 +793,12 @@ int main68(void)
     while(true){
         f_getcwd(linebuffer, LINELEN/sizeof(TCHAR));
         cprintf("%s> ", linebuffer);
+
+#if BOOTLOADER_MODE
+        strcpy(linebuffer, "vmlinux console=ttyS0,115200n8 init=/bin/bash root=/dev/hda2");
+#else
         getline(linebuffer, LINELEN);
+#endif
 
         /* parse linebuffer into list of args */
         numarg = 0;

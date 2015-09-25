@@ -77,6 +77,8 @@ ide:	ppide2.o
 dt:	daytime.out
 fdc:	fdc8272.o wd37c65.o floppy.o
 
+rom:	kissbios.rom
+	minipro -p SST39SF040 -w kissbios.rom
 
 
 cpm68.bin:	$(TARGET).bin rom/rom400.bin
