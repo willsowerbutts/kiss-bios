@@ -26,6 +26,7 @@
 #include "packer.h"
 #include "mfpic.h"
 #include "dosdisk.h"
+#include "rtc.h"
 #include "ide.h"
 #include "elf.h"
 #include "coff.h"
@@ -43,6 +44,7 @@ void *memset(void *s, int c, size_t n);
 int sio_get(void);
 int _con_out(char);
 void _run_us_mode(word mode, void *pc);
+void setup(int ch);
 
 extern byte location_zero;
 const char msg_welcome[] =
@@ -848,9 +850,13 @@ bool execute_script(const char *filename)
     return true;
 }
 
+#define AUTOBOOT_FILE "0:/boot.cmd"
+
 int main68(void)
 {
-    int i;
+    int i = 10;
+    byte a, b = 0xFF;
+    bool autoboot = false;
 
     /* set up work areas for each volume */
     for(i=0; i<_VOLUMES; i++){
@@ -860,7 +866,43 @@ int main68(void)
         f_mount(&fat_fs_workarea[i], inputbuffer, 0); /* permit lazy mounting */
     }
 
-    execute_script("0:/boot.cmd");
+    cprintf("Press S for setup");
+    if(f_stat(AUTOBOOT_FILE, NULL) == FR_OK){
+        autoboot = true;
+        cprintf(", or X to skip startup script (\"%s\")", AUTOBOOT_FILE);
+    }
+    cprintf(" ... ");
+
+    i = 3;
+    while(i>0){
+        a = rtc_get_loc(SECOND);
+        if(a != b){
+            if(b != 0xFF)
+                i--;
+            b = a;
+        }
+        a = sio_get();
+        if(a != 255){
+            switch(a){
+                case 's':
+                case 'S':
+                    setup(a);
+                    break;
+                case 'x':
+                case 'X':
+                    autoboot = false;
+                    i = 0;
+                    break;
+                default:
+                    i = 0;
+                    break;
+            }
+        }
+    }
+    cprintf("\n");
+
+    if(autoboot)
+        execute_script(AUTOBOOT_FILE);
 
     while(true){
         f_getcwd(inputbuffer, LINELEN/sizeof(TCHAR));
