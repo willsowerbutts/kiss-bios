@@ -559,7 +559,7 @@ qword daytime_c(byte option)
 
 int set_serial (void)
 {
-	byte line[16];
+	char line[16];
 	int i, rate, bitrate;
 /*	const char *rates[8] = {"1200", "2400", "4800", "9600", "19200", "38400", "57600", "115200"}; */
 	const int rates[] = { 300, 600, 1200, 1800, 2400, 3600, 4800, 7200,
@@ -569,10 +569,10 @@ int set_serial (void)
 	bitrate = (counter_clock/16)/div;
 	while (1) {
 		cprintf ("Serial port baud rate (Kbit/sec) [%d]: ", bitrate);
-		GETLINE((char*)line);
+		GETLINE(line);
 		if (line[0] == '\0') break;
 
-		rate = atoi((char*)line);
+		rate = atoi(line);
 		for (i = 0; i < nelem(rates); i++) {
 			if (rate == rates[i]) break;
 		}
@@ -638,7 +638,6 @@ void get_nvram(void)
 	setup_dide_disk();
 #endif
 }
-
 
 void setup(int ch)
 {
