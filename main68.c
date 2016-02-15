@@ -515,7 +515,7 @@ bool load_elf_executable(char *arg[], int numarg, FIL *fd)
             /* now we write a linux bootinfo structure at the start of the 4K page following the kernel image */
             bootinfo = (struct bi_record*)((highest + 0xfff) & ~0xfff);
 
-            cprintf(" bootinfo at 0x%x\n", bootinfo);
+            cprintf(" creating bootinfo at 0x%x\n", bootinfo);
 
             /* machine type */
             bootinfo->tag = BI_MACHTYPE;

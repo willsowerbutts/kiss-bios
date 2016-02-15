@@ -897,7 +897,7 @@ void configure(void)
 	timer_ticks = get_rtc_time(&time);
 	julian_day = get_rtc_date(&date);
 
-	cprintf("Boot at %2u:%02u:%02u on %2u%02u/%u/%u   %8luJ %8luT\n",
+	cprintf("Boot at %2u:%02u:%02u on %2u%02u-%02u-%02u   %8luJ %8luT\n",
 		(int)time.hour, (int)time.minute, (int)time.second,
 		(int)date.century, (int)date.year, (int)date.month, (int)date.day,
 		(long)date.julian, (long)time.ticks);
