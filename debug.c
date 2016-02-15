@@ -72,7 +72,7 @@ long lookup(const T_symbol *table, char *name, byte nocase)
 	errno = 0;
 	lth = strlen(name);
 	while (p->length) {
-		if (p->length == lth  &&  (nocase ? !stricmp(p->name, name) : !strcmp(p->name, name)) ) {
+		if (p->length == lth  &&  (nocase ? !strcasecmp(p->name, name) : !strcmp(p->name, name)) ) {
 			return p->value;
 		}
 		++p;

@@ -123,7 +123,7 @@ sio_gotit:
 bios_sioget:
 	bsr.s	sio_get		/* get a character or -1 */
 	cmp.l	#-1,%d0		/* check for -1 */
-	beq.s	bios_sioget	/* re-try if -1 */
+	beq.w	bios_sioget	/* re-try if -1 */
 	move.l	%d0,%d1		/* character returned in D1 */
 	clr.l	%d0		/* good return code */
 	jmp	bios_good_return	/* exit from BIOS call */
@@ -150,9 +150,9 @@ put_string:
 	beq.s	put_string_done
 	move.w	%d0,-(%sp)
 	move.b	(%a0)+,%d0
-	bsr.s	sio_put
+	bsr.w	sio_put
 	move.w	(%sp)+,%d0
-	bra.s	put_string
+	bra.w	put_string
 put_string_done:
 	rts
 
@@ -164,7 +164,7 @@ siostr_loop:
 	move.b	(%a6)+,%d0
 	cmp.b	%d0,%d1
 	beq.s	siostr_done
-	bsr.s	sio_put
+	bsr.w	sio_put
 	br.s	siostr_loop
 siostr_done:
 	sub.l	%a0,%a6

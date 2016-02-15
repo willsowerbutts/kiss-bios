@@ -15,15 +15,16 @@ BOARD_BASE_DATA = 0xFFFE0000
 ######################################
 
 
-CROSS = m68k-elf
-CROSSLIB = -L/usr/local/lib/gcc/m68k-elf/4.9.2/ -L/usr/local/m68k-elf/lib/
+CROSS = m68k-linux-gnu
+# CROSSLIB = -L/usr/local/lib/gcc/m68k-elf/4.9.2/ -L/usr/local/m68k-elf/lib/
+CROSSLIB = -L/usr/lib/gcc-cross/m68k-linux-gnu/5/ -L/usr/m68k-linux-gnu/lib/
 #
 RETAIL=RETAIL=0
 CPU=$(MCPU)
 #
 #
 CC = $(CROSS)-gcc
-COPT = -O2 -malign-int -m$(CPU) -Wall -Werror -D$(RETAIL)
+COPT = -O2 -nostdlib -I. -malign-int -m$(CPU) -Wall -Werror -D$(RETAIL)
 # -Wa,-alhms,-L
 AS = $(CROSS)-as
 AOPT = -m$(CPU) -alhms --defsym $(RETAIL) --defsym M68000=$(CPU)
@@ -31,7 +32,7 @@ LD = $(CROSS)-ld
 LOPT = -Ttext $(BOARD_BASE_ROM) -Tdata $(BOARD_BASE_DATA)
 UOPT = -Ttext 0x1100 --entry begin
 LIB = $(CROSS)-ar
-LIBS = $(CROSSLIB) -lc -lgcc
+LIBS = $(CROSSLIB) -lgcc
 
 TARGET = kiss01
 TUTOR = ../yoda/tutor13b.s68
@@ -54,18 +55,18 @@ HFILES = mytypes.h packer.h mfpic.h ns202.h dosdisk.h ide.h main68.h crc32.h \
   coff.h myide.h rtc.h io.h fdc8272.h wd37c65.h debug.h version.h
 HSFILES = optab.h disasm.h
 OFILES = main68.o kiss030.o serial.o rtc.o ds1302.o cprintf.o packer.o \
-	pic202.o ns202.o ppide.o dualide.o bios8.o strtoul.o malloc.o \
+	pic202.o ns202.o ppide.o dualide.o bios8.o malloc.o \
 	dualsd.o crctab.o bioscall.o fdc8272.o wd37c65.o floppy.o setup.o \
-	debug.o beetle.o disasm.o mem4mem.o prettydump.o diskio.o ff.o
+	debug.o beetle.o disasm.o mem4mem.o prettydump.o diskio.o ff.o stdlib.o
 CSFILES = main68.s cprintf.s packer.s ns202.s crc32.s malloc.s setup.s \
-	rtc.s strtoul.s fdc8272.s wd37c65.s ppide2.s debug.s disasm.s
+	rtc.s fdc8272.s wd37c65.s ppide2.s debug.s disasm.s stdlib.s
 
 
 
 TABLES = startup.sym startup.mod
 TTABLES = test1.sym test1.mod daytime.sym daytime.mod
 
-LIBFILES = cprintf.o strtoul.o bioscall.o crt0.o
+LIBFILES = cprintf.o stdlib.o bioscall.o crt0.o
 
 
 all:	test kissbios.rom $(TABLES)

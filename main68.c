@@ -854,7 +854,7 @@ bool execute_script(const char *filename)
 
 int main68(void)
 {
-    int i = 10;
+    int i;
     byte a, b = 0xFF;
     bool autoboot = false;
 
