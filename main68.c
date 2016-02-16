@@ -20,8 +20,8 @@
 
 **********************************************************************/
 #include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
+#include "stdlib.h"
+#include "string.h"
 #include "mytypes.h"
 #include "packer.h"
 #include "mfpic.h"

@@ -16,9 +16,9 @@
  * the N8VEM baby M68k CPU board project.
  */
 
-#include <stdlib.h>
+#include "stdlib.h"
 #include <stdarg.h>
-#include <string.h>
+#include "string.h"
 
 
 #undef printf

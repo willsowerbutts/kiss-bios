@@ -19,7 +19,7 @@
     program.  If not, see <http://www.gnu.org/licenses/>.
 
 **********************************************************************/
-#include <stdlib.h>
+#include "stdlib.h"
 
 void *memset(void *s, int c, size_t n);
 

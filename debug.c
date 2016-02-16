@@ -19,8 +19,8 @@
     program.  If not, see <http://www.gnu.org/licenses/>.
 
 **********************************************************************/
-#include <stdlib.h>
-#include <string.h>
+#include "stdlib.h"
+#include "string.h"
 #include "ctype.h"
 #include "mytypes.h"
 #include "main68.h"

@@ -1,4 +1,4 @@
-#include <string.h>
+#include "string.h"
 #include "main68.h"
 
 void pretty_dump_memory(void *start, int len)

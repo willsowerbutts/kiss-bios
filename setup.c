@@ -19,8 +19,8 @@
     program.  If not, see <http://www.gnu.org/licenses/>.
 
 **********************************************************************/
-#include <stdlib.h>
-#include <string.h>
+#include "stdlib.h"
+#include "string.h"
 #include "mytypes.h"
 #include "packer.h"
 #include "ns202.h"

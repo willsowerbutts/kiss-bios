@@ -1,5 +1,5 @@
-#include <string.h>
-#include <ctype.h>
+#include "string.h"
+#include "ctype.h"
 
 /* Based on string.c
  * Copyright (C) 1995,1996 Robert de Bath <rdebath@cix.compulink.co.uk>

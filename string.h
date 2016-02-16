@@ -1,7 +1,7 @@
 #ifndef __STRING_DOT_H__
 #define __STRING_DOT_H__
 
-#include <stdlib.h>
+#include "stdlib.h"
 
 void *memcpy(void *dest, const void *src, size_t len);
 void *memmove(void *dest, const void *src, size_t len);

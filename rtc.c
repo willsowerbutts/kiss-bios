@@ -19,7 +19,7 @@
     program.  If not, see <http://www.gnu.org/licenses/>.
 
 **********************************************************************/
-#include <stdlib.h>
+#include "stdlib.h"
 #include "mytypes.h"
 #include "mfpic.h"
 #include "ns202.h"

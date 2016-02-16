@@ -17,7 +17,8 @@ BOARD_BASE_DATA = 0xFFFE0000
 
 CROSS = m68k-linux-gnu
 # CROSSLIB = -L/usr/local/lib/gcc/m68k-elf/4.9.2/ -L/usr/local/m68k-elf/lib/
-CROSSLIB = -L/usr/lib/gcc-cross/m68k-linux-gnu/5/ -L/usr/m68k-linux-gnu/lib/
+# CROSSLIB = -L/usr/lib/gcc-cross/m68k-linux-gnu/5/ -L/usr/m68k-linux-gnu/lib/
+CROSSLIB = 
 #
 RETAIL=RETAIL=0
 CPU=$(MCPU)
@@ -32,7 +33,7 @@ LD = $(CROSS)-ld
 LOPT = -Ttext $(BOARD_BASE_ROM) -Tdata $(BOARD_BASE_DATA)
 UOPT = -Ttext 0x1100 --entry begin
 LIB = $(CROSS)-ar
-LIBS = $(CROSSLIB) -lgcc
+LIBS = $(CROSSLIB)
 
 TARGET = kiss01
 TUTOR = ../yoda/tutor13b.s68
@@ -141,10 +142,6 @@ debug.o:	debug.c $(HFILES) $(HSFILES)
 	$(AS) $(AOPT) -a=$*.lst -o $*.o $*.s
 
 disasm.o:	disasm.c $(HFILES) $(HSFILES)
-	$(CC) -S $(COPT) $*.c
-	$(AS) $(AOPT) -a=$*.lst -o $*.o $*.s
-
-strtoul.o:	strtoul.c $(HFILES)
 	$(CC) -S $(COPT) $*.c
 	$(AS) $(AOPT) -a=$*.lst -o $*.o $*.s
 
