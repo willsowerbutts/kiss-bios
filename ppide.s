@@ -263,13 +263,20 @@ ppide_reset:
 	nop
 	move.b	#ide_rst_line,portC_o(%a5)	/* assert the RST line on the interface */
 
-	move.l	#50000,%d0		/* half a second */
-	jsr	usec_delay		/* wait 500ms */
+	move.l	#1000,%d0
+	jsr	usec_delay		/* wait 10ms */
 
 	clr.b	portC_o(%a5)
 
-	move.l	#200000,%d0		/* half a second */
-	jsr	usec_delay		/* wait 500ms */
+	move.l	#1000,%d0
+	jsr	usec_delay		/* wait 10ms */
+
+	move.l	%d2,-(%sp)		/* save D2 */
+        moveq #4, %d2                   /* some drives take a while to reset */
+resetwait:
+        bsr     ide_wait_not_busy
+        dbra    %d2, resetwait
+	move.l	(%sp)+,%d2		/* restore D2 */
 
 	move.b	#ide_status,%d0
 	bsr	ide_read		/* read status of drive 0 */
@@ -311,7 +318,7 @@ reset1:
 	bne.s	reset2
 reset20:
 .endif
-	add.l	#2,%a0				/* mark drive 0 present */
+	add.l	#2,%a0				/* mark drive 1 present */
 reset2:
        	move.b	#0b11100000,%d1
 	move.b	#ide_head,%d0		/* select drive 0 */

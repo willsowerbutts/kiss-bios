@@ -280,7 +280,7 @@ clean:	tidy
 	rm -f *.o
 	rm -f *.a
 	rm -f *.hex
-	rm -f *.bin *.BIN
+	rm -f *.bin *.BIN kissbios.rom
 	rm -f *.out
 	rm -f $(CSFILES)
 
