@@ -28,7 +28,7 @@ struct mem_info {
 #define BI_COMMAND_LINE         0x0007  /* kernel command line parameters */
                                         /* (string) */
 
-#define MACH_KISS68030          13      /* unofficial as of 2015-09 */
+#define MACH_KISS68030          1653    /* unofficial as of 2015-09 */
 #define CPUB_68030              1
 #define CPU_68030               (1 << CPUB_68030)
 #define FPUB_68881              0

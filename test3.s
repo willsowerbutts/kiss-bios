@@ -27,6 +27,7 @@ HEXOUT		=	0	/* 1 for pre 6-Aug-2015 output */
 #  Cache control bits in the CACR
 
 CACR_EI		=	1	/* Enable Instruction Cache		*/
+CACR_DI		=	0	/* Disable Instruction Cache		*/
 CACR_FI		=	1<<1	/* Freeze Instruction Cache		*/
 CACR_CEI	=	1<<2	/* Clear Entry in Instr. Cache		*/
 CACR_CI		=	1<<3	/* Clear Instruction Cache		*/
@@ -59,23 +60,51 @@ BANK4		=	8
 
 
 
-STACK		=	0xFFFE7FF0
+STACK		=	0xFFFE7FF0 - 8
 PASS		=	STACK+4			/* memory loc. */
 EPASS		=	PASS+4			/* memory loc. */
-UART_DATA	=	EPASS+4
-UART_REG	=	UART_DATA+1
-UART_TYPE	=	UART_REG+1
+UART_DATA	=	EPASS+4			/* byte */
+UART_REG	=	UART_DATA+1		/* byte */
+UART_TYPE	=	UART_REG+1		/* byte */
+BFLAG		=	UART_TYPE+1		/* byte */
+BMAGIC		=	BFLAG+1			/* long word */
+
+BVALUE		=	0x12345678		/* for BMAGIC */
 
 	.globl	location_zero
 
 location_zero:
 	.long	STACK			/* Reset:  initial SSP */
 	.long	_start			/* Reset:  initial PC  */
+.rept 14
+	.long	Bus_Error		/* BERR trap location */
+.endr
 
+CACR_DIAG = CACR_CD + CACR_CI + CACR_EI
+CACR_DIS  = CACR_CI + CACR_DI
 
-    .globl _start
+	.globl	_start
 _start:
 # 	move.b	#0x81,(lites).w		/* display in the lights */
+	lea	location_zero,%a0
+	move.l	%a0,%d6
+	movec	%d6,%vbr		/* vector base */
+.if 1
+	move.l	#CACR_DIAG,%d6		/* enable instruction cache */
+	movec	%d6,%cacr
+
+	move.l	#20,%d5			/* 2.0 seconds */
+	lea	sttd1,%a6
+	jbra	_LED_off
+sttd1:	
+	move.l	#4,%d0
+	lea	sttd2,%a5
+	jbra	_Blink			/* 4 blinks before DRAM init */
+sttd2:
+
+	move.l	#CACR_DIS,%d6		/* disable instruction cache */
+	movec	%d6,%cacr
+.endif
 
 /* DRAM startup */
 	move.w	#8-1,%d2		/* outer counter */
@@ -87,20 +116,42 @@ DRAM_start:
 
 	move	%d0,%a0			/* use A0 */
 	move.w	#4096,%d1		/* count 4K addresses  */
+	tst.b	%d0			/* check for low zero */
+	jbne	DRAM_skip		/* only do aligned reads */
 DRAM_s0:
 	move.l	(%a0)+,%d0		/* D0 is scratch */
 	dbra	%d1,DRAM_s0		/* just do 4K read refreshes */
-
+DRAM_skip:
 	lea	8(%a3),%a3		/* bump to next address */
 	jbra	DRAM_start
 DRAM_started:
 	dbra	%d2,DRAM_start00	/* loop back 8 times */
 
-CACR_DIAG = CACR_CD + CACR_CI + CACR_EI
+#CACR_DIAG = CACR_CD + CACR_CI + CACR_EI
 
-	move	#CACR_DIAG,%d6		/* enable instruction cache */
+	move.l	#CACR_DIAG,%d6		/* enable instruction cache */
 	movec	%d6,%cacr
 
+/* visual signal before the SRAM test */
+	move.l	#20,%d5			/* 2.0 seconds */
+	lea	stt1,%a6
+	jbra	_LED_off
+stt1:	
+	move.l	#3,%d0
+	lea	stt2,%a5
+	jbra	_Blink			/* 3 blinks before SRAM test */
+stt2:
+	move.l	#20,%d5			/* 2.0 seconds */
+	lea	stt3,%a6
+	jbra	_LED_off
+stt3:	
+.if 0 			/* debug - test BERR exception */
+#	move.l	#BVALUE,(BMAGIC)	/* suppress halt */
+	move.l	#0x30000000,%a0		/* test bus error halt */
+	nop
+	move.w	(%a0),%d0
+	nop
+.endif
 /* start the SRAM test */
 # 	move.b	#0x5A,(lites).w		/* display in the lights */C
 
@@ -116,7 +167,7 @@ retp0:
 	jbra	_Blink
 retp1:
 #	move.l	#1,%d6		/* FORCE ERROR */
-	move.l	%d6,%d0			/* test error count */
+	tst.l	%d6			/* test error count */
 
 	jbeq	SRAM_okay
 	move.l	#6,%d0			/* eight blinks if not okay */
@@ -190,16 +241,6 @@ run0:	dbra	%d5,run1
 	swap	%d5
 	dbra	%d5,run2
 
-# 	move.b	#0xCC,(lites).w		/* display in the lights */
-.if 0
-	move.l	#100000,%d5		/* delay */
-	jbra	rr0
-rr2:	swap	%d5
-rr1:	reset
-rr0:	dbra	%d5,rr1
-	swap	%d5
-	dbra	%d5,rr2
-.endif
 
 /* end of test1, now do the memory test */
 
@@ -418,9 +459,9 @@ str4:	.ascii	"    Last error at pass:  \0"
 str5:	.ascii	"\r\nMF/PIC UART is\0"
 strB:	.ascii	"   B\0"
 .ifdef SIZE
-strID:	.ascii	"\r\n\r\nTEST4.BIN  18-Aug-2015  John R Coffman.  Licensed for hobbyist use only.\r\n\0"
+strID:	.ascii	"\r\n\r\nTEST4.BIN  07-Sep-2015  John R Coffman.  Licensed for hobbyist use only.\r\n\0"
 .else
-strID:	.ascii	"\r\n\r\nTEST3.BIN  18-Aug-2015  John R Coffman.  Licensed for hobbyist use only.\r\n\0"
+strID:	.ascii	"\r\n\r\nTEST3.BIN  07-Sep-2015  John R Coffman.  Licensed for hobbyist use only.\r\n\0"
 .endif
 	.ascii	"\0"
 	.align	4
@@ -635,6 +676,16 @@ dram16:	.long	0x00000000
 	.long	-1			/* end marker */
 
 
+Bus_Error:
+	cmp.l	#BVALUE,(BMAGIC)	/* test for magic value */
+	jbne	bus_blink
+	move.b	#0xFF,(BFLAG)		/* set the flag */
+	add.l	#2,2(%sp)		/* MUST use 1 word exception */
+	rte				/* return from exception */
+bus_blink:
+	move.l	#250,%d0		/* 250 blinks */
+	lea	stop0,%a5
+	jbra	_Blink			/* panic situation */
 
 	/* now STOP, we are all done here */
 stop0:	stop	#0x2701

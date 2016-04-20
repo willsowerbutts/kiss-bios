@@ -24,18 +24,12 @@
 .include "allide.s"
 #-----------------------------------------------------------------------------
 
-Dual_IDE_port	=	0x80
-
 arg1	=	4
 arg2	=	arg1+4
 arg3	=	arg2+4
 arg4	=	arg3+4
 
 buffer	= 	arg2
-
-
-dual_ide_A	=	BOARD_BASE_IO + Dual_IDE_port
-dual_ide_B	=	dual_ide_A + 16
 
 /*
     Enter general dispatch routines with:
@@ -82,9 +76,11 @@ dide_reset:
 	move.l	#1000,%d0			/* delay 10 ms = 10,000 usec */
 	jsr	usec_delay
 	move.b	#0b00001010,ide_control(%a5)	/* deassert SRST, deassert IEN */
-	move.l	#50000,%d0
-	jsr	usec_delay			/* delay 500 ms */
-	
+
+	move.l	#25000,%d0
+	jsr	usec_delay			/* delay 250 ms */
+        bsr     ide_wait_not_busy               /* some drives are a bit slow */
+
 #	cmp.b	#0,ide_head(%a5)
 #	bne.s	reset1
 	cmp.b	#0x50,ide_status(%a5)		/* check for BUSY=0, RDY=1, SeekComplete=1 */
@@ -103,6 +99,8 @@ reset1:
        	move.b	#0b11110000,ide_head(%a5)	/* select drive 1 */
 	move.l	#1000,%d0			/* delay 10 ms = 10,000 usec */
 	jsr	usec_delay
+        bsr     ide_wait_not_busy               /* some drives are a bit slow */
+
 	cmp.b	#0x50,ide_status(%a5)		/* check for BUSY=0, RDY=1, SeekComplete=1 */
 	bne.s	reset2
 /* may wish to recalibrate the drive here */
@@ -160,6 +158,7 @@ dide_info:
 	move.b	(disk_slave_o,%a1),%d0		/* get slave byte */
 	or.b	#0xE0,%d0
 	move.b	%d0,ide_head(%a5)		/* set M/S */
+	jsr	usec16			        /* wait 16 usec after selecting */
 
 	move.b	#ide_cmd_id,ide_command(%a5)	/* send ID command */
 

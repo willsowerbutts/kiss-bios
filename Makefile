@@ -51,11 +51,11 @@ INC =
 	$(CC) -S $(COPT) $*.c
 
 
-SFILES = mfpic.s memtest.s memtest2.s uart.s ns202def.s biostrap.s error.s ppi.s allide.s siodef.s
+SFILES = mfpic.s memtest.s memtest2.s uart.s ns202def.s biostrap.s error.s ppi.s allide.s siodef.s rommemtest.s
 HFILES = mytypes.h packer.h mfpic.h ns202.h dosdisk.h ide.h main68.h crc32.h \
   coff.h myide.h rtc.h io.h fdc8272.h wd37c65.h debug.h version.h
 HSFILES = optab.h disasm.h
-OFILES = main68.o kiss030.o serial.o rtc.o ds1302.o cprintf.o packer.o \
+OFILES = main68.o kiss030.o serial.o rtc.o ds1302.o cprintf.o packer.o rommemtest.o \
 	pic202.o ns202.o ppide.o dualide.o bios8.o malloc.o \
 	dualsd.o crctab.o bioscall.o fdc8272.o wd37c65.o floppy.o setup.o \
 	debug.o beetle.o disasm.o mem4mem.o prettydump.o diskio.o ff.o stdlib.o

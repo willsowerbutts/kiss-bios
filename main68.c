@@ -45,6 +45,7 @@ int sio_get(void);
 int _con_out(char);
 void _run_us_mode(word mode, void *pc);
 void setup(int ch);
+void rom_memory_test(void);
 
 extern byte location_zero;
 const char msg_welcome[] =
@@ -56,7 +57,7 @@ const char msg_welcome[] =
 #endif
     "KISS-BIOS built " __TIME__ " on " __DATE__ "\r\n"
     "Copyright (C) 2011-2015 John R. Coffman  <johninsd@gmail.com>" "\r\n"
-    "Copyright (C) 2015 William R. Sowerbutts <will@sowerbutts.com>" "\r\n"
+    "Copyright (C) 2015-2016 William R. Sowerbutts <will@sowerbutts.com>" "\r\n"
 #if RETAIL
     "\r\n"
     "This program is free software: you can redistribute it and/or modify\r\n"
@@ -75,7 +76,7 @@ const char msg_welcome[] =
     "\r\n"
 #endif
 #if M68000==68030
-    "Distributed for hobbyist use on the N8VEM KISS-68030 CPU board."
+    "Distributed for hobbyist use on the KISS-68030 CPU board."
 #else
     "Distributed for hobbyist use on the N8VEM Mini-M68k CPU board."
 #endif
@@ -866,12 +867,12 @@ int main68(void)
         f_mount(&fat_fs_workarea[i], inputbuffer, 0); /* permit lazy mounting */
     }
 
-    cprintf("Press S for setup");
+    cprintf("\nPress:\n  [S] for BIOS Setup\n");
+    //cprintf(          "  [M] for Memory Test\n");
     if(f_stat(AUTOBOOT_FILE, NULL) == FR_OK){
         autoboot = true;
-        cprintf(", or X to skip startup script (\"%s\")", AUTOBOOT_FILE);
+        cprintf("  [X] to skip startup script (\"%s\")\n", AUTOBOOT_FILE);
     }
-    cprintf(" ... ");
 
     i = 3;
     while(i>0){
@@ -888,6 +889,12 @@ int main68(void)
                 case 'S':
                     setup(a);
                     break;
+                // case 'm':
+                // case 'M':
+                //     // WRS:
+                //     // see http://www.barrgroup.com/Embedded-Systems/How-To/Memory-Test-Suite-C
+                //     // http://stackoverflow.com/questions/3729544/free-implementation-of-march-memory-testing-algorithm
+                //     rom_memory_test();
                 case 'x':
                 case 'X':
                     autoboot = false;

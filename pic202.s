@@ -24,6 +24,7 @@
 .include "mfpic.s"
 ############################################################
 .include "ns202def.s"
+.include "hardware.s"
 ############################################################
 
 
@@ -93,11 +94,13 @@ end_of_interrupt:
 	.globl	usec_delay
 usec_delay:
 	move.l	%d1,-(%sp)	/* save D1 */
+.ifdef BOARD_BABY
 	lsr	#4,%d0		/* divide by 16 */
+.endif
 	move.l	%d0,%d1		/* D0.w is the low count */
 	swap	%d1		/* D1.w is high count, likely 0 */
 ud1:
-	jsr	usec1x		/* 16 microsecond delay */
+	jsr	usec20		/* 16 microsecond delay */
 	dbra.w	%d0,ud1		/* count down to -1 */
 	dbra.w	%d1,ud1		/* count down to -1 */
 
@@ -115,6 +118,7 @@ ud1:
 	.globl	usec12
 	.globl	usec10
 	.globl	usec09
+.if BOARD_BABY
 usec20:
 	nop
 	nop
@@ -133,6 +137,22 @@ usec10:
 	nop
 usec09:
 	rts
+.else
+# Waste a whole bunch of time. Who knows how much.
+usec20:
+        movem.l %d0-%d7/%a0-%a7,-(%sp)
+        movem.l (%sp)+,%d0-%d7/%a0-%a7
+usec16:
+        movem.l %d0-%d7/%a0-%a7,-(%sp)
+        movem.l (%sp)+,%d0-%d7/%a0-%a7
+usec1x:
+usec12:
+usec10:
+usec09:
+        movem.l %d0-%d7/%a0-%a7,-(%sp)
+        movem.l (%sp)+,%d0-%d7/%a0-%a7
+	rts
+.endif
 
 
 /*
