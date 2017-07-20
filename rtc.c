@@ -20,6 +20,7 @@
 
 **********************************************************************/
 #include "stdlib.h"
+#include "string.h"
 #include "mytypes.h"
 #include "mfpic.h"
 #include "ns202.h"

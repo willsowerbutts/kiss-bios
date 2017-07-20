@@ -198,6 +198,11 @@ unsigned long int strtoul(const char *nptr, char **endptr, int base)
     return number;
 }
 
+int atoi(const char *nptr)
+{
+    return strtol(nptr, NULL, 10);
+}
+
 long int strtol(const char *nptr, char **endptr, int base)
 {
     const char * ptr;

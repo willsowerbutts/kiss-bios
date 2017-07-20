@@ -15,6 +15,7 @@ int strcasecmp(const char *s, const char *d);
 char *strncat(char *d, const char *s, size_t l);
 unsigned long int strtoul(const char *nptr, char **endptr, int base);
 long int strtol(const char *nptr, char **endptr, int base);
+int atoi(const char *nptr);
 char *strncpy(char *d, const char *s, size_t l);
 int strcmp(const char *d, const char *s);
 

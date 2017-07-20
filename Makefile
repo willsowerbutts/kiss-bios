@@ -25,7 +25,7 @@ CPU=$(MCPU)
 #
 #
 CC = $(CROSS)-gcc
-COPT = -O2 -nostdlib -I. -malign-int -m$(CPU) -Wall -Werror -D$(RETAIL)
+COPT = -O2 -nostdinc -nostdlib -I. -malign-int -m$(CPU) -Wall -Werror -D$(RETAIL)
 # -Wa,-alhms,-L
 AS = $(CROSS)-as
 AOPT = -m$(CPU) -alhms --defsym $(RETAIL) --defsym M68000=$(CPU)
