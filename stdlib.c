@@ -122,17 +122,17 @@ int strncasecmp(const char *s, const char *d, size_t l)
     return 0;
 }
 
-char *strncat(char *d, const char *s, size_t l) 
+char *strncat(char *dest, const char *src, size_t n)
 {
-    char *s1 = d + strlen(d), *s2 = memchr(s, 0, l);
+    size_t dest_len = strlen(dest);
+    size_t i;
 
-    if (s2)
-        memcpy(s1, s, s2 - s + 1);
-    else {
-        memcpy(s1, s, l);
-        s1[l] = '\0';
-    }
-    return d;
+    for (i = 0 ; i < n && src[i] != '\0' ; i++)
+	dest[dest_len + i] = src[i];
+
+    dest[dest_len + i] = '\0';
+
+    return dest;
 }
 
 unsigned long int strtoul(const char *nptr, char **endptr, int base)

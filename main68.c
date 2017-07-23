@@ -554,15 +554,25 @@ bool load_elf_executable(char *arg[], int numarg, FIL *fd)
             #define MAXCMDLEN 200
             const char *initrd_name = NULL;
             char kernel_cmdline[MAXCMDLEN];
+            int l, kernel_cmdline_avail = MAXCMDLEN - 1; // allow 1 byte for terminating 0
             kernel_cmdline[0] = 0;
 
             for(i=1; i<numarg; i++){
-                if(!strncasecmp(arg[i], "initrd=", 7)){
+                if(!strncasecmp(arg[i], "initrd=", 7)){ /* special arg we process ourselves */
                     initrd_name = &arg[i][7];
-                }else{
-                    if(kernel_cmdline[0])
-                        strncat(kernel_cmdline, " ", MAXCMDLEN);
-                    strncat(kernel_cmdline, arg[i], MAXCMDLEN);
+                }else{ /* everything else we pass to the kernel */
+                    if(kernel_cmdline[0] && kernel_cmdline_avail > 0){
+                        strncat(kernel_cmdline, " ", kernel_cmdline_avail);
+                        kernel_cmdline_avail -= 1;
+                    }
+                    l = strlen(arg[i]);
+                    if(kernel_cmdline_avail >= l){
+                        strncat(kernel_cmdline, arg[i], kernel_cmdline_avail);
+                        kernel_cmdline_avail -= l;
+                    }else{
+                        cprintf("Aborted: Kernel command line is too long\n");
+                        return false;
+                    }
                 }
             }
 
@@ -587,13 +597,14 @@ bool load_elf_executable(char *arg[], int numarg, FIL *fd)
                 if(f_read(&initrd, (char*)meminfo->addr, meminfo->size, &bytes_read) != FR_OK || 
                         bytes_read != meminfo->size){
                     cprintf("Unable to load initrd.\n");
-                    /* if loading initrd fails, we replace this bootinfo record with BI_LAST */
+                    return false;
                 }else{
                     bootinfo = (struct bi_record*)(((char*)bootinfo) + bootinfo->size);
                 }
                 f_close(&initrd);
             }else if(initrd_name){
                 cprintf("Unable to open \"%s\": No initrd.\n", initrd_name);
+                return false;
             }
 
             /* terminate the bootinfo structure */
